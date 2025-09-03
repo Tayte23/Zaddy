@@ -17,6 +17,8 @@
     .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important; color: var(--navy) !important; border-color: transparent !important; animation: pulseGold 1.6s ease-in-out infinite; font-weight: 700; }
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
+    .badge { border-radius: 10px; padding:.15rem .5rem; border:1px solid rgb(71 85 105); }
+    .field { @apply w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
@@ -64,13 +66,6 @@
         <button id="sosBtn" class="chip text-sm" title="Flag as critical">SOS</button>
       </div>
 
-      <!-- Tone toggle -->
-      <div class="max-w-3xl mx-auto flex items-center gap-3 text-sm">
-        <span class="text-slate-300">Tone:</span>
-        <button id="tonePro" class="chip chip-active">Professional</button>
-        <button id="tonePlay" class="chip">Playful</button>
-      </div>
-
       <!-- Offline + Queue banners -->
       <div id="offlineBanner" class="hidden max-w-3xl mx-auto rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm">
         No endpoint configured — entries will be saved locally until you add one.
@@ -99,20 +94,34 @@
         </div>
       </div>
 
-      <!-- Quick form -->
+      <!-- QUICK MODE -->
       <form id="quickForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5">
-        <label class="text-base">What happened? (short note)
-          <textarea name="what_happened" rows="3"
+        <label class="text-base">Pain point
+          <textarea name="pain_point" rows="3"
             class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
-            placeholder="Optional if you used a voice note..."></textarea>
+            placeholder="What’s getting in the way right now?"></textarea>
         </label>
 
-        <label class="text-base">Time lost so far
-          <select name="time_lost" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3">
-            <option>&lt; 5 min</option><option>5–15 min</option><option>15–30 min</option>
-            <option>30–60 min</option><option>1–2 hours</option><option>2+ hours</option>
-          </select>
+        <label class="text-base">Proposed solution / requirement
+          <textarea name="proposed_solution" rows="2"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="What would fix this or make it easier?"></textarea>
         </label>
+
+        <fieldset class="text-base">
+          <legend class="mb-2">Tag the area(s)</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Medication"> Medication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Training"> Training</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="qOther" value="__OTHER__"> Other</label>
+          </div>
+          <input id="qOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
+        </fieldset>
 
         <fieldset class="text-base">
           <legend class="mb-2">Frustration level</legend>
@@ -125,18 +134,76 @@
           </div>
         </fieldset>
 
-        <div class="flex items-center justify-between">
-          <label class="text-base text-slate-300 flex items-center gap-2">
-            <input type="checkbox" name="anonymous" class="h-5 w-5 rounded border-slate-600 bg-[var(--navy-2)]">
-            Submit anonymously
+        <div class="flex justify-end">
+          <button class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
+        </div>
+      </form>
+
+      <!-- FULL MODE -->
+      <form id="fullForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5 hidden">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="text-base">Mood now
+            <select name="mood" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3">
+              <option value="1">🙂 Calm</option>
+              <option value="2">😐 Okay</option>
+              <option value="3">😕 Tense</option>
+              <option value="4">😣 Stressed</option>
+              <option value="5">😫 Overwhelmed</option>
+            </select>
           </label>
+          <span></span>
+        </div>
+
+        <label class="text-base">Pain point
+          <textarea name="pain_point" rows="3"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="What’s the issue? Facts only."></textarea>
+        </label>
+
+        <label class="text-base">What would “better” look like? (ideal)
+          <textarea name="ideal" rows="2"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="Describe the outcome or requirement."></textarea>
+        </label>
+
+        <fieldset class="text-base">
+          <legend class="mb-2">Tag the area(s)</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Medication"> Medication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Training"> Training</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="fOther" value="__OTHER__"> Other</label>
+          </div>
+          <input id="fOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
+        </fieldset>
+
+        <!-- Private vent (NOT sent) -->
+        <div class="rounded-xl border border-slate-700 p-4">
+          <div class="flex items-center gap-2">
+            <span class="badge">Private</span>
+            <p class="font-semibold">The Locker-Room Vent (your private bench)</p>
+          </div>
+          <p class="text-sm text-slate-300 mt-1">
+            Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent.
+            Growl, vent, or type “I’m fine 💪” if you’d rather smirk at it.
+          </p>
+          <textarea id="ventBox" rows="3"
+            class="mt-3 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="Optional: let it out. We won’t transmit or store this."></textarea>
+        </div>
+
+        <div class="flex justify-end">
           <button class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
       </form>
 
       <!-- After-submit coach -->
       <div id="coach" class="max-w-3xl mx-auto hidden rounded-2xl border border-emerald-400/40 p-6 glass text-emerald-100">
-        <p id="coachText" class="font-medium text-lg">Entry saved. Thank you.</p>
+        <p id="coachText" class="font-medium text-lg">Entry saved. Thanks — you’re carrying a lot.</p>
         <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
       </div>
     </section>
@@ -149,7 +216,6 @@
     const MAX_SECONDS = 120;         // voice auto-stop at 2 minutes
     // ==================
 
-    // Elements
     const gate = document.getElementById('gate');
     const diary = document.getElementById('diary');
     const gateForm = document.getElementById('gateForm');
@@ -162,20 +228,22 @@
     const quickBtn = document.getElementById('quickBtn');
     const fullBtn  = document.getElementById('fullBtn');
     const quickForm= document.getElementById('quickForm');
+    const fullForm = document.getElementById('fullForm');
     const coach    = document.getElementById('coach');
     const coachText= document.getElementById('coachText');
     const sosBtn   = document.getElementById('sosBtn');
-    const tonePro  = document.getElementById('tonePro');
-    const tonePlay = document.getElementById('tonePlay');
-    let playful = false;
+    const qOther   = document.getElementById('qOther');
+    const qOtherText = document.getElementById('qOtherText');
+    const fOther   = document.getElementById('fOther');
+    const fOtherText = document.getElementById('fOtherText');
+    let sos=false;
 
     // Voice bits
     const recBtn=document.getElementById('recBtn'), stopBtn=document.getElementById('stopBtn'),
           timer=document.getElementById('timer'), audioWrap=document.getElementById('audioWrap'),
           audioPreview=document.getElementById('audioPreview'), discardAudio=document.getElementById('discardAudio');
-    let mediaRecorder=null, audioChunks=[], audioBlob=null, timerInterval=null, seconds=0, sos=false;
+    let mediaRecorder=null, audioChunks=[], audioBlob=null, timerInterval=null, seconds=0;
 
-    // Helpers
     function isEndpointConfigured(){ return (ENDPOINT||"").trim().length>0; }
     function updateQueueBanner(){
       const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
@@ -203,21 +271,19 @@
       } else alert('Incorrect password');
     });
 
-    // Mode tabs (keep Quick visible; Full omitted here)
+    // Mode buttons
     quickBtn.addEventListener('click', () => {
       quickBtn.classList.add('chip-active'); fullBtn.classList.remove('chip-active');
-      quickForm.classList.remove('hidden');
+      quickForm.classList.remove('hidden'); fullForm.classList.add('hidden');
     });
     fullBtn.addEventListener('click', () => {
       fullBtn.classList.add('chip-active'); quickBtn.classList.remove('chip-active');
-      alert('Full mode coming next. Quick mode is ready now.');
+      fullForm.classList.remove('hidden'); quickForm.classList.add('hidden');
     });
 
-    // Tone toggle
-    function setTone(p){ playful = p; tonePro.classList.toggle('chip-active', !p); tonePlay.classList.toggle('chip-active', p); }
-    tonePro.addEventListener('click', ()=>setTone(false));
-    tonePlay.addEventListener('click', ()=>setTone(true));
-    setTone(false);
+    // Show/hide Other inputs
+    qOther.addEventListener('change', ()=>{ qOtherText.classList.toggle('hidden', !qOther.checked); });
+    fOther.addEventListener('change', ()=>{ fOtherText.classList.toggle('hidden', !fOther.checked); });
 
     // SOS toggle
     sosBtn.addEventListener('click',()=>{ sos=!sos; sosBtn.classList.toggle('sos-on',sos); });
@@ -244,7 +310,7 @@
     stopBtn.addEventListener('click',()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
     discardAudio.addEventListener('click',()=>{ audioBlob=null; audioWrap.classList.add('hidden'); recBtn.classList.remove('hidden'); });
 
-    // Submit logic
+    // Helpers
     async function blobToDataURL(b){ if(!b) return null; return new Promise(r=>{ const fr=new FileReader(); fr.onloadend=()=>r(fr.result); fr.readAsDataURL(b); }); }
     async function postJSON(payload){
       if (!isEndpointConfigured()) throw new Error('No endpoint');
@@ -257,29 +323,59 @@
       localStorage.setItem('offline_queue_json', JSON.stringify(q)); updateQueueBanner();
     }
     function afterSubmit(){
-      coachText.textContent = playful
-        ? "Saved. I’ve got you — thank you for trusting me with this. 😉"
-        : "Entry saved. Thank you for logging this — take a slow breath in and out.";
+      coachText.textContent = "Entry saved. Thanks — you’re carrying a lot.";
       coach.classList.remove('hidden'); setTimeout(()=>coach.classList.add('hidden'), 6000);
-      quickForm.reset(); if(audioBlob) discardAudio.click(); sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
+      quickForm.reset(); fullForm.reset();
+      if(qOther.checked) { qOther.checked=false; qOtherText.value=""; qOtherText.classList.add('hidden'); }
+      if(fOther.checked) { fOther.checked=false; fOtherText.value=""; fOtherText.classList.add('hidden'); }
+      if(audioBlob) discardAudio.click();
+      sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
     }
 
+    function collectTags(formEl, otherChecked, otherTextEl){
+      const fd = new FormData(formEl);
+      let tags = fd.getAll('tags');
+      if (otherChecked && otherTextEl.value.trim()) tags.push("Other: " + otherTextEl.value.trim());
+      return tags;
+    }
+
+    // QUICK submit
     quickForm.addEventListener('submit', async e=>{
       e.preventDefault();
       const fd=new FormData(quickForm);
       const payload={
         mode:'quick',
         timestamp:new Date().toISOString(),
-        what_happened:fd.get('what_happened')||'',
-        time_lost:fd.get('time_lost')||'',
-        frustration:fd.get('frustration')||'',
-        anonymous:fd.get('anonymous')==='on',
+        // map to backend columns
+        what_happened: fd.get('pain_point') || '',
+        ideal: fd.get('proposed_solution') || '',
+        frustration: fd.get('frustration') || '',
+        tags: collectTags(quickForm, qOther.checked, qOtherText),
         device:navigator.userAgent||'',
         sos:!!sos,
         audioDataURL: await blobToDataURL(audioBlob)
       };
       try { await postJSON(payload); afterSubmit(); }
-      catch { queueLocally(payload); alert('Saved locally. Tap \"Send now\" later to upload.'); afterSubmit(); }
+      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
+    });
+
+    // FULL submit (note: ventBox is PRIVATE and excluded)
+    fullForm.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const fd=new FormData(fullForm);
+      const payload={
+        mode:'full',
+        timestamp:new Date().toISOString(),
+        mood: fd.get('mood') || '',
+        what_happened: fd.get('pain_point') || '',
+        ideal: fd.get('ideal') || '',
+        tags: collectTags(fullForm, fOther.checked, fOtherText),
+        device:navigator.userAgent||'',
+        sos:!!sos,
+        audioDataURL: await blobToDataURL(audioBlob)
+      };
+      try { await postJSON(payload); afterSubmit(); }
+      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
     });
 
     // Send queued
