@@ -1,0 +1,642 @@
+# Create updated files:
+# 1) HTML with shiny-gold SOS (on) + subtle pulse
+# 2) Google Apps Script with daily recap email + install trigger helper
+from pathlib import Path, PurePosixPath
+import base64
+
+logo = Path("/mnt/data/TAITEQ Logo - Min.png")
+b64_logo = ""
+if logo.exists():
+    b64_logo = "data:image/png;base64," + base64.b64encode(logo.read_bytes()).decode("utf-8")
+
+html = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAITEQ — Care Manager Diary (Voice + SOS)</title>
+  <meta name="description" content="Password-protected diary for care managers to log issues with text or voice notes. Includes SOS flag.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {{
+      --navy:#0a1b2b;
+      --navy-2:#0f2438;
+      --ink:#0b0f14;
+    }}
+    @keyframes popIn {{ from{{opacity:0;transform:translateY(8px)}} to{{opacity:1;transform:translateY(0)}} }}
+    @keyframes breathe {{ 0%{{transform:scale(1);opacity:.6}} 50%{{transform:scale(1.06);opacity:1}} 100%{{transform:scale(1);opacity:.6}} }}
+    @keyframes pulseGold {{ 0% {{ box-shadow: 0 0 6px rgba(255,215,0,.6);}}
+                            50%{{ box-shadow: 0 0 16px rgba(255,215,0,.95);}}
+                           100%{{ box-shadow: 0 0 6px rgba(255,215,0,.6);}}
+    }}
+    .glass {{ background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }}
+    .pill {{ border-radius: 999px; }}
+    .muted {{ opacity:.7 }}
+    .btn-gold {{
+      background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000);
+      color: var(--navy);
+      font-weight: 600;
+      box-shadow: 0 0 12px rgba(255,215,0,.7);
+      transition: all .2s;
+    }}
+    .btn-gold:hover {{ filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,215,0,.9); }}
+    .sos-on {{
+      background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important;
+      color: var(--navy) !important;
+      border-color: transparent !important;
+      animation: pulseGold 1.6s ease-in-out infinite;
+      font-weight: 700;
+    }}
+  </style>
+</head>
+<body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl grid place-items-center bg-white">
+          {"<img src='" + b64_logo + "' alt='TAITEQ' class='h-7 w-7 object-contain'/>" if b64_logo else "<span class='text-[var(--navy)] font-bold'>TQ</span>"}
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-semibold">TAITEQ — Care Manager Diary</h1>
+          <p class="text-xs text-slate-300">Password • Voice notes • SOS • Offline-ready</p>
+        </div>
+      </div>
+      <div class="text-xs text-slate-300" id="lockStatus">🔒 Locked</div>
+    </header>
+
+    <!-- Password Gate -->
+    <section id="gate" class="rounded-2xl border border-slate-700 p-6 shadow-sm glass" style="animation:popIn .5s ease both">
+      <h2 class="text-lg font-medium">Enter password</h2>
+      <p class="mt-1 text-sm text-slate-300">Your diary is protected on this device.</p>
+      <form id="gateForm" class="mt-4 flex flex-col sm:flex-row gap-3">
+        <input type="password" placeholder="Password"
+               class="flex-1 rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 placeholder:text-slate-400" required />
+        <label class="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" id="rememberMe" class="rounded border-slate-500 bg-[var(--navy-2)]" /> Remember me
+        </label>
+        <button class="pill px-5 py-3 btn-gold" type="submit">Unlock</button>
+      </form>
+    </section>
+
+    <!-- Diary -->
+    <section id="diary" class="hidden mt-6 space-y-6">
+      <div id="offlineBanner" class="hidden rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm">
+        No endpoint configured — entries will be saved locally until you add one.
+      </div>
+      <div class="rounded-xl border border-emerald-300/50 bg-emerald-200/10 text-emerald-100 p-3 text-sm hidden" id="queueBanner">
+        You have <span id="queueCount">0</span> unsent entry(ies). <button id="sendQueue" class="underline font-medium">Send now</button>
+      </div>
+
+      <!-- Controls row -->
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="text-sm text-slate-300">Mode:</span>
+        <button id="quickBtn" class="px-3 py-1 pill text-sm bg-white text-[var(--navy)]">Quick</button>
+        <button id="fullBtn" class="px-3 py-1 pill text-sm border border-slate-600">Full</button>
+        <span class="grow"></span>
+        <button id="sosBtn" class="px-3 py-1 pill text-sm border border-slate-600" title="Flag as critical">SOS</button>
+      </div>
+
+      <!-- Voice Widget -->
+      <div class="rounded-2xl border border-slate-700 p-4 glass">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Optional voice note</p>
+            <p class="text-xs muted">Record a short note. Auto-stops at 2:00.</p>
+          </div>
+          <div class="text-xs" id="micStatus">🎙️ Ready</div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <button id="recBtn" class="pill px-4 py-2 bg-white text-[var(--navy)] font-medium">Start recording</button>
+          <button id="stopBtn" class="pill px-4 py-2 border border-slate-600 hidden">Stop</button>
+          <span id="timer" class="text-xs muted hidden">00:00</span>
+        </div>
+        <div id="audioWrap" class="mt-3 hidden">
+          <audio id="audioPreview" controls class="w-full"></audio>
+          <button id="discardAudio" class="mt-2 text-xs underline">Discard</button>
+        </div>
+      </div>
+
+      <!-- Quick Entry -->
+      <form id="quickForm" class="rounded-2xl border border-slate-700 p-6 shadow-sm glass space-y-4">
+        <div class="grid gap-4">
+          <label class="text-sm">What happened? (short note)
+            <textarea name="what_happened" rows="3"
+              class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2 text-slate-100 placeholder:text-slate-400"
+              placeholder="Optional if you used a voice note..."></textarea>
+          </label>
+          <label class="text-sm">Time lost so far
+            <select name="time_lost" class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2">
+              <option>&lt; 5 min</option>
+              <option>5–15 min</option>
+              <option>15–30 min</option>
+              <option>30–60 min</option>
+              <option>1–2 hours</option>
+              <option>2+ hours</option>
+            </select>
+          </label>
+          <div class="text-sm">Frustration level
+            <div class="mt-1 flex gap-2">
+              <label class="flex items-center gap-1"><input type="radio" name="frustration" value="1" required>🙂</label>
+              <label class="flex items-center gap-1"><input type="radio" name="frustration" value="2">😐</label>
+              <label class="flex items-center gap-1"><input type="radio" name="frustration" value="3">😕</label>
+              <label class="flex items-center gap-1"><input type="radio" name="frustration" value="4">😣</label>
+              <label class="flex items-center gap-1"><input type="radio" name="frustration" value="5">😫</label>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <label class="text-sm text-slate-300 flex items-center gap-2">
+            <input type="checkbox" name="anonymous" class="rounded border-slate-600 bg-[var(--navy-2)]"> Submit anonymously
+          </label>
+          <button class="pill px-5 py-3 btn-gold" type="submit">Log entry</button>
+        </div>
+      </form>
+
+      <!-- Full Entry -->
+      <form id="fullForm" class="hidden rounded-2xl border border-slate-700 p-6 shadow-sm glass space-y-4">
+        <div class="grid gap-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="text-sm">Mood now
+              <select name="mood" class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2">
+                <option value="1">🙂 Calm</option>
+                <option value="2">😐 OK</option>
+                <option value="3">😕 Tense</option>
+                <option value="4">😣 Stressed</option>
+                <option value="5">😫 Overwhelmed</option>
+              </select>
+            </label>
+            <label class="text-sm">Time lost so far
+              <select name="time_lost" class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2">
+                <option>&lt; 5 min</option>
+                <option>5–15 min</option>
+                <option>15–30 min</option>
+                <option>30–60 min</option>
+                <option>1–2 hours</option>
+                <option>2+ hours</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="text-sm">What happened? (facts)
+            <textarea name="what_happened" rows="3"
+              class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2"
+              placeholder="Optional if explained in a voice note..."></textarea>
+          </label>
+          <label class="text-sm">Impact on care/admin (who/what was affected?)
+            <textarea name="impact" rows="2"
+              class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2"></textarea>
+          </label>
+          <label class="text-sm">Workaround used (if any)
+            <input name="workaround" class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2" />
+          </label>
+          <label class="text-sm">What would “better” look like? (ideal)
+            <textarea name="ideal" rows="2"
+              class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2"></textarea>
+          </label>
+        </div>
+        <fieldset class="text-sm">
+          <legend class="mb-2">Tag the area(s)</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Medication"> Medication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Training"> Training</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Other"> Other</label>
+          </div>
+        </fieldset>
+        <div class="flex items-center justify-between">
+          <label class="text-sm text-slate-300 flex items-center gap-2">
+            <input type="checkbox" name="anonymous" class="rounded border-slate-600 bg-[var(--navy-2)]"> Submit anonymously
+          </label>
+          <button class="pill px-5 py-3 btn-gold" type="submit">Log entry</button>
+        </div>
+      </form>
+
+      <!-- After-submit micro-coach -->
+      <div id="coach" class="hidden rounded-2xl border border-emerald-400/40 p-5 glass text-emerald-100">
+        <div class="flex items-center gap-3">
+          <div class="h-8 w-8 rounded-full bg-emerald-500/20 grid place-items-center">🌿</div>
+          <div>
+            <p class="font-medium">Entry saved. You’re carrying a lot — thank you.</p>
+            <p class="text-sm text-emerald-200">Quick box-breath: in 4s, hold 4s, out 4s, hold 4s (×3).</p>
+          </div>
+        </div>
+        <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
+      </div>
+
+      <footer class="pt-2 text-xs text-slate-400">
+        Confidentiality: Entries are used only for improving care software and will never be shared without consent.
+      </footer>
+    </section>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const PASSWORD = "Daddy";  // change if needed
+    const ENDPOINT = "";       // paste your Google Apps Script Web App URL
+    const MAX_SECONDS = 120;   // auto-stop at 2 minutes
+    // ==================
+
+    const gate = document.getElementById('gate');
+    const diary = document.getElementById('diary');
+    const gateForm = document.getElementById('gateForm');
+    const lockStatus = document.getElementById('lockStatus');
+    const rememberMe = document.getElementById('rememberMe');
+    const offlineBanner = document.getElementById('offlineBanner');
+    const queueBanner = document.getElementById('queueBanner');
+    const queueCount = document.getElementById('queueCount');
+    const sendQueue = document.getElementById('sendQueue');
+    const quickBtn = document.getElementById('quickBtn');
+    const fullBtn = document.getElementById('fullBtn');
+    const quickForm = document.getElementById('quickForm');
+    const fullForm = document.getElementById('fullForm');
+    const coach = document.getElementById('coach');
+    const sosBtn = document.getElementById('sosBtn');
+
+    // Voice elements
+    const recBtn = document.getElementById('recBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const micStatus = document.getElementById('micStatus');
+    const timer = document.getElementById('timer');
+    const audioWrap = document.getElementById('audioWrap');
+    const audioPreview = document.getElementById('audioPreview');
+    const discardAudio = document.getElementById('discardAudio');
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let timerInterval = null;
+    let seconds = 0;
+    let sos = false;
+
+    function isEndpointConfigured() {{ return (ENDPOINT || "").trim().length > 0; }}
+    function updateQueueBanner() {{
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
+      if (q.length > 0) {{ queueCount.textContent = String(q.length); queueBanner.classList.remove('hidden'); }}
+      else {{ queueBanner.classList.add('hidden'); }}
+    }}
+    function showDiary() {{
+      gate.classList.add('hidden');
+      diary.classList.remove('hidden');
+      lockStatus.textContent = '🔓 Unlocked';
+      if (!isEndpointConfigured()) offlineBanner.classList.remove('hidden');
+      updateQueueBanner();
+    }}
+    (function init() {{
+      const remembered = localStorage.getItem('diary_unlocked') === 'true';
+      if (remembered) showDiary();
+    }})();
+
+    gateForm.addEventListener('submit', (e)=>{{
+      e.preventDefault();
+      const input = gateForm.querySelector('input[type="password"]');
+      if (input.value === PASSWORD) {{
+        if (rememberMe.checked) localStorage.setItem('diary_unlocked','true');
+        showDiary();
+      }} else {{ alert('Incorrect password'); }}
+    }});
+
+    quickBtn.addEventListener('click', () => {{
+      quickBtn.className = 'px-3 py-1 pill text-sm bg-white text-[var(--navy)]';
+      fullBtn.className = 'px-3 py-1 pill text-sm border border-slate-600';
+      quickForm.classList.remove('hidden'); fullForm.classList.add('hidden');
+    }});
+    fullBtn.addEventListener('click', () => {{
+      fullBtn.className = 'px-3 py-1 pill text-sm bg-white text-[var(--navy)]';
+      quickBtn.className = 'px-3 py-1 pill text-sm border border-slate-600';
+      fullForm.classList.remove('hidden'); quickForm.classList.add('hidden');
+    }});
+
+    // SOS toggle
+    sosBtn.addEventListener('click', () => {{
+      sos = !sos;
+      sosBtn.classList.toggle('sos-on', sos);
+      sosBtn.textContent = sos ? 'SOS (on)' : 'SOS';
+    }});
+
+    // ---- Voice recorder ----
+    recBtn.addEventListener('click', async () => {{
+      try {{
+        const stream = await navigator.mediaDevices.getUserMedia({{ audio:true }});
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {{
+          audioBlob = new Blob(audioChunks, {{ type: mediaRecorder.mimeType || 'audio/webm' }});
+          const url = URL.createObjectURL(audioBlob);
+          audioPreview.src = url;
+          audioWrap.classList.remove('hidden');
+          recBtn.classList.remove('hidden');
+          stopBtn.classList.add('hidden');
+          timer.classList.add('hidden');
+          micStatus.textContent = '🎙️ Voice note ready';
+          clearInterval(timerInterval);
+          stream.getTracks().forEach(t => t.stop());
+        }};
+        mediaRecorder.start();
+        micStatus.textContent = '● Recording...';
+        recBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        timer.classList.remove('hidden');
+        seconds = 0;
+        timer.textContent = '00:00';
+        timerInterval = setInterval(() => {{
+          seconds += 1;
+          const m = String(Math.floor(seconds/60)).padStart(2,'0');
+          const s = String(seconds%60).padStart(2,'0');
+          timer.textContent = m + ':' + s;
+          if (seconds >= MAX_SECONDS && mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+        }}, 1000);
+      }} catch(err) {{
+        alert('Microphone access denied or unavailable.');
+      }}
+    }});
+    stopBtn.addEventListener('click', () => {{ if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); }});
+    discardAudio.addEventListener('click', () => {{
+      audioBlob = null;
+      audioWrap.classList.add('hidden');
+      audioPreview.removeAttribute('src');
+      recBtn.classList.remove('hidden');
+      micStatus.textContent = '🎙️ Ready';
+    }});
+
+    // Helpers
+    async function blobToDataURL(blob) {{
+      if (!blob) return null;
+      return new Promise((resolve, reject) => {{
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }});
+    }}
+    function collect(FormEl, mode, audioDataURL) {{
+      const fd = new FormData(FormEl);
+      const tags = fd.getAll('tags');
+      const payload = {{
+        mode,
+        timestamp: new Date().toISOString(),
+        mood: fd.get('mood') || null,
+        what_happened: fd.get('what_happened') || '',
+        impact: fd.get('impact') || null,
+        workaround: fd.get('workaround') || null,
+        ideal: fd.get('ideal') || null,
+        category: fd.get('category') || null,
+        time_lost: fd.get('time_lost') || null,
+        frustration: fd.get('frustration') || fd.get('mood') || null,
+        tags: (tags && tags.length) ? tags : null,
+        anonymous: fd.get('anonymous') === 'on',
+        device: navigator.userAgent || 'unknown',
+        sos: !!sos,
+        audioDataURL: audioDataURL || null
+      }};
+      return payload;
+    }}
+    async function postJSON(payload) {{
+      if (!isEndpointConfigured()) throw new Error('No endpoint');
+      const res = await fetch(ENDPOINT, {{
+        method: 'POST',
+        headers: {{ 'Content-Type':'application/json' }},
+        body: JSON.stringify(payload)
+      }});
+      if (!res.ok) throw new Error('Submit failed');
+      return await res.json().catch(() => ({{}}));
+    }}
+    function queueLocally(payload) {{
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
+      q.push(payload);
+      localStorage.setItem('offline_queue_json', JSON.stringify(q));
+      updateQueueBanner();
+    }}
+    async function handleSubmit(e, mode) {{
+      e.preventDefault();
+      const dataURL = await blobToDataURL(audioBlob);
+      const payload = collect(e.currentTarget, mode, dataURL);
+      try {{
+        await postJSON(payload);
+        afterSubmit();
+      }} catch(err) {{
+        queueLocally(payload);
+        alert('Saved locally. Tap "Send now" later to upload.');
+        afterSubmit();
+      }}
+    }}
+    function afterSubmit() {{
+      coach.classList.remove('hidden');
+      setTimeout(() => coach.classList.add('hidden'), 7000);
+      quickForm.reset(); fullForm.reset();
+      if (audioBlob) {{ discardAudio.click(); }}
+      sos = false; sosBtn.classList.remove('sos-on'); sosBtn.textContent = 'SOS';
+      updateQueueBanner();
+    }}
+    quickForm.addEventListener('submit', (e) => handleSubmit(e, 'quick'));
+    fullForm.addEventListener('submit', (e) => handleSubmit(e, 'full'));
+
+    sendQueue.addEventListener('click', async () => {{
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
+      if (!isEndpointConfigured()) return alert('Add an endpoint first.');
+      let ok = 0;
+      for (const item of q) {{ try {{ await postJSON(item); ok++; }} catch(e){{}} }}
+      if (ok > 0) {{ localStorage.setItem('offline_queue_json','[]'); updateQueueBanner(); alert('Queued entries sent.'); }}
+      else {{ alert('Could not send queued entries.'); }}
+    }});
+  </script>
+</body>
+</html>
+"""
+
+gas = r"""/**
+ * TAITEQ Care Manager Diary — Google Apps Script (Sheets + Drive + Daily Recap)
+ * Accepts JSON with optional audioDataURL. Saves audio to Drive and logs URL in Sheet.
+ * Sends a daily recap email with key stats.
+ *
+ * Setup:
+ * 1) Create a Google Sheet and set Project Settings -> Time zone to Europe/London.
+ * 2) Extensions -> Apps Script -> paste this file.
+ * 3) (Optional) Project Settings -> Script properties:
+ *    - FOLDER_ID: Drive folder ID for audio uploads (optional)
+ *    - RECIPIENT: Email to receive the daily recap (recommended)
+ * 4) Deploy -> New deployment -> Web app -> Execute as: Me; Who has access: Anyone with the link.
+ * 5) Run setDailyTrigger() once to create a 17:00 daily email trigger (uses project time zone).
+ * 6) Put the Web app URL into ENDPOINT in your HTML.
+ */
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) return respond_({ ok:false, error:'No payload' }, 400);
+    var data = JSON.parse(e.postData.contents);
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getActiveSheet();
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        'Received At','Mode','Mood/Frustration','What happened','Impact','Workaround','Ideal',
+        'Category','Tags','Time lost','Anonymous','SOS','Device','Audio File URL'
+      ]);
+    }
+
+    var audioUrl = '';
+    if (data.audioDataURL) {
+      audioUrl = saveAudio_(data.audioDataURL);
+    }
+
+    sheet.appendRow([
+      new Date(),
+      data.mode || '',
+      data.mood || data.frustration || '',
+      data.what_happened || '',
+      data.impact || '',
+      data.workaround || '',
+      data.ideal || '',
+      data.category || '',
+      (data.tags || []).join(', '),
+      data.time_lost || '',
+      data.anonymous ? 'Yes' : 'No',
+      data.sos ? 'Yes' : 'No',
+      data.device || '',
+      audioUrl
+    ]);
+
+    return respond_({ ok:true, audioUrl: audioUrl });
+  } catch (err) {
+    return respond_({ ok:false, error: String(err) }, 500);
+  }
+}
+
+function saveAudio_(dataURL) {
+  var matches = dataURL.match(/^data:(.*?);base64,(.*)$/);
+  if (!matches) return '';
+  var contentType = matches[1] || 'application/octet-stream';
+  var base64 = matches[2];
+  var bytes = Utilities.base64Decode(base64);
+  var ext = contentType.indexOf('ogg') > -1 ? '.ogg' : (contentType.indexOf('webm') > -1 ? '.webm' : '');
+  var blob = Utilities.newBlob(bytes, contentType, 'voice-note-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd-HHmmss") + ext);
+  var folderId = PropertiesService.getScriptProperties().getProperty('FOLDER_ID');
+  var folder = folderId ? DriveApp.getFolderById(folderId) : DriveApp.getRootFolder();
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+  return file.getUrl();
+}
+
+function respond_(obj, status) {
+  status = status || 200;
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** -------- Daily Recap Email -------- **/
+function setDailyTrigger() {
+  // Clears existing triggers for sendDailyRecap, then sets a new one for 17:00 local time
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i=0;i<triggers.length;i++) {
+    if (triggers[i].getHandlerFunction() === 'sendDailyRecap') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger('sendDailyRecap').timeBased().atHour(17).everyDays(1).create();
+}
+
+function sendDailyRecap() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var tz = Session.getScriptTimeZone(); // ensure Project time zone is set (Europe/London)
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return; // nothing to report
+
+  var data = sheet.getRange(2,1,lastRow-1,14).getValues(); // rows, cols A-N
+  var today = new Date();
+  var start = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // 00:00 today
+  var end = new Date(today.getFullYear(), today.getMonth(), today.getDate()+1); // 00:00 next day
+
+  var rowsToday = data.filter(function(row){
+    var ts = row[0]; // Received At
+    return ts && ts >= start && ts < end;
+  });
+
+  if (rowsToday.length === 0) return;
+
+  // Aggregations
+  var total = rowsToday.length;
+  var sosCount = 0;
+  var sumFrustration = 0, frCount = 0;
+  var catCounts = {};
+  var latest = [];
+
+  rowsToday.forEach(function(r){
+    var mode = r[1];
+    var moodOrFrustration = r[2];
+    var what = r[3];
+    var category = r[7];
+    var tags = r[8];
+    var sos = (r[11] || '').toString().toLowerCase() === 'yes';
+    var audioUrl = r[13];
+
+    if (sos) sosCount++;
+    var f = parseInt(moodOrFrustration,10);
+    if (!isNaN(f)) { sumFrustration += f; frCount++; }
+
+    catCounts[category || 'Uncategorised'] = (catCounts[category || 'Uncategorised'] || 0) + 1;
+
+    latest.push({
+      time: Utilities.formatDate(new Date(r[0]), tz, "HH:mm"),
+      mode: mode || '',
+      category: category || '',
+      what: what || '',
+      audio: audioUrl || ''
+    });
+  });
+
+  // Sort latest by time (desc) and take top 10
+  latest.sort(function(a,b){ return a.time < b.time ? 1 : -1; });
+  latest = latest.slice(0,10);
+
+  var avgFrustration = frCount ? (sumFrustration / frCount).toFixed(2) : '—';
+  var catHtml = Object.keys(catCounts).sort(function(a,b){ return catCounts[b]-catCounts[a]; })
+    .map(function(k){ return '<li>'+escapeHtml_(k)+': <b>'+catCounts[k]+'</b></li>'; }).join('');
+
+  var latestHtml = latest.map(function(it){
+    var a = it.audio ? ' | <a href="'+it.audio+'">audio</a>' : '';
+    return '<tr><td>'+it.time+'</td><td>'+escapeHtml_(it.mode)+'</td><td>'+escapeHtml_(it.category)+'</td><td>'+escapeHtml_(it.what)+'</td><td>'+a+'</td></tr>';
+  }).join('');
+
+  var subject = 'TAITEQ Diary — Daily Recap ('+Utilities.formatDate(new Date(), tz, "EEE dd MMM yyyy")+')';
+  var body = ''
+    + '<div style="font-family:Inter,Segoe UI,Arial,sans-serif; color:#0a1b2b">'
+    + '<h2 style="margin:0 0 8px 0;">Daily Recap</h2>'
+    + '<p style="margin:0 0 12px 0; color:#516173">Time zone: '+tz+'</p>'
+    + '<div style="padding:12px; background:#f7f9fc; border:1px solid #e5e7eb; border-radius:10px">'
+    + '<p><b>Total entries:</b> '+total+' &nbsp; • &nbsp; <b>SOS:</b> '+sosCount+' &nbsp; • &nbsp; <b>Avg frustration:</b> '+avgFrustration+'</p>'
+    + '<p style="margin:10px 0 6px 0"><b>Top categories</b></p>'
+    + '<ul style="margin:0 0 12px 18px">'+catHtml+'</ul>'
+    + '<p style="margin:10px 0 6px 0"><b>Latest entries</b></p>'
+    + '<table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse;border-color:#e5e7eb;">'
+    + '<tr style="background:#e5e7eb"><th>Time</th><th>Mode</th><th>Category</th><th>What happened</th><th>Files</th></tr>'
+    + latestHtml
+    + '</table>'
+    + '</div>'
+    + '<p style="color:#516173; font-size:12px; margin-top:10px">Generated by TAITEQ Diary</p>'
+    + '</div>';
+
+  var props = PropertiesService.getScriptProperties();
+  var to = props.getProperty('RECIPIENT') || Session.getActiveUser().getEmail();
+  if (!to) return;
+  MailApp.sendEmail({ to: to, subject: subject, htmlBody: body });
+}
+
+function escapeHtml_(s){
+  if (!s) return '';
+  return s.toString().replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; });
+}
+"""
+
+html_path = Path("/mnt/data/taiteq-care-manager-diary-sos-gold-recap.html")
+html_path.write_text(html, encoding="utf-8")
+
+gas_path = Path("/mnt/data/taiteq-diary-endpoint-with-recap.gs")
+gas_path.write_text(gas, encoding="utf-8")
+
+html_path.as_posix(), gas_path.as_posix()
