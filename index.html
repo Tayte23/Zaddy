@@ -8,105 +8,45 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { --navy:#0a1b2b; --navy-2:#0f2438; }
-    @keyframes breathe { 0%{transform:scale(1);opacity:.6} 50%{transform:scale(1.06);opacity:1} 100%{transform:scale(1);opacity:.6} }
-    @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 16px rgba(255,215,0,.95);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
-    .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }
-    .pill { border-radius: 999px; }
-    .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 600; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
-    .btn-gold:hover { filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,215,0,.9); }
+    @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
+    .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
+    .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 700; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
+    .btn-gold:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(255,215,0,1); }
     .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important; color: var(--navy) !important; border-color: transparent !important; animation: pulseGold 1.6s ease-in-out infinite; font-weight: 700; }
   </style>
 </head>
-<body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
-  <div class="max-w-4xl mx-auto px-6 py-8">
-    <!-- Header (matches screenshot) -->
-    <header class="mb-6 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl grid place-items-center bg-white">
-          <span class="text-[var(--navy)] font-bold">TQ</span>
+<body class="min-h-screen bg-[var(--navy)] text-slate-100">
+  <div class="max-w-4xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <header class="mb-10 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl grid place-items-center bg-white">
+          <span class="text-[var(--navy)] font-bold text-lg">TQ</span>
         </div>
         <div>
-          <h1 class="text-2xl font-semibold">TAITEQ — Care Manager Diary</h1>
-          <p class="text-xs text-slate-300">Password • Voice notes • SOS • Offline-ready</p>
+          <h1 class="text-3xl md:text-4xl font-bold">TAITEQ — Care Manager Diary</h1>
+          <p class="text-sm md:text-base text-slate-300">Password • Voice notes • SOS • Offline-ready</p>
         </div>
       </div>
-      <div class="text-xs text-slate-300" id="lockStatus">🔒 Locked</div>
+      <div class="text-sm md:text-base text-slate-300" id="lockStatus">🔒 Locked</div>
     </header>
 
-    <!-- Gate card (layout & copy like screenshot) -->
-    <section id="gate" class="max-w-3xl rounded-2xl border border-slate-700 p-6 glass mx-auto">
-      <h2 class="text-xl font-semibold">Enter password</h2>
-      <p class="mt-1 text-sm text-slate-300">Your diary is protected on this device.</p>
+    <!-- Password Gate -->
+    <section id="gate" class="max-w-2xl rounded-2xl border border-slate-700 p-8 glass mx-auto">
+      <h2 class="text-2xl font-semibold">Enter password</h2>
+      <p class="mt-2 text-base text-slate-300">Your diary is protected on this device.</p>
 
-      <form id="gateForm" class="mt-4 grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-4" autocomplete="off">
-        <div class="col-span-1">
-          <input type="password" placeholder="Password"
-                 class="w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 placeholder:text-slate-400" required />
-        </div>
-        <div class="flex items-center gap-4 md:justify-end">
-          <label class="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" id="rememberMe" class="rounded border-slate-500 bg-[var(--navy-2)]" />
+      <form id="gateForm" class="mt-6 flex flex-col md:flex-row gap-4" autocomplete="off">
+        <input type="password" placeholder="Password"
+               class="flex-1 rounded-xl border border-slate-600 bg-[var(--navy-2)] px-6 py-4 text-lg text-slate-100 placeholder:text-slate-400" required />
+        <div class="flex items-center justify-between gap-4">
+          <label class="flex items-center gap-2 text-base text-slate-300">
+            <input type="checkbox" id="rememberMe" class="h-5 w-5 rounded border-slate-500 bg-[var(--navy-2)]" />
             Remember me
           </label>
-          <button class="pill px-6 py-3 btn-gold" type="submit">Unlock</button>
+          <button class="rounded-xl px-8 py-4 text-lg btn-gold" type="submit">Unlock</button>
         </div>
       </form>
-    </section>
-
-    <!-- Diary (kept minimal here; same features behind the gate) -->
-    <section id="diary" class="hidden mt-6 space-y-6">
-      <div id="offlineBanner" class="hidden max-w-3xl mx-auto rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm">
-        No endpoint configured — entries will be saved locally until you add one.
-      </div>
-
-      <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-3">
-        <span class="text-sm text-slate-300">Mode:</span>
-        <button id="quickBtn" class="px-3 py-1 pill text-sm bg-white text-[var(--navy)]">Quick</button>
-        <button id="fullBtn" class="px-3 py-1 pill text-sm border border-slate-600">Full</button>
-        <span class="grow"></span>
-        <button id="sosBtn" class="px-3 py-1 pill text-sm border border-slate-600" title="Flag as critical">SOS</button>
-      </div>
-
-      <!-- Voice widget -->
-      <div class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-4 glass">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="font-medium">Optional voice note</p>
-            <p class="text-xs opacity-70">Auto-stops at 2:00.</p>
-          </div>
-          <div class="text-xs" id="micStatus">🎙️ Ready</div>
-        </div>
-        <div class="mt-3 flex flex-wrap items-center gap-3">
-          <button id="recBtn" class="pill px-4 py-2 bg-white text-[var(--navy)] font-medium">Start recording</button>
-          <button id="stopBtn" class="pill px-4 py-2 border border-slate-600 hidden">Stop</button>
-          <span id="timer" class="text-xs opacity-70 hidden">00:00</span>
-        </div>
-        <div id="audioWrap" class="mt-3 hidden">
-          <audio id="audioPreview" controls class="w-full"></audio>
-          <button id="discardAudio" class="mt-2 text-xs underline">Discard</button>
-        </div>
-      </div>
-
-      <!-- Quick form -->
-      <form id="quickForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-4">
-        <label class="text-sm">What happened?
-          <textarea name="what_happened" rows="3"
-            class="mt-1 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-3 py-2 text-slate-100"></textarea>
-        </label>
-        <div class="flex items-center justify-between">
-          <label class="text-sm text-slate-300 flex items-center gap-2">
-            <input type="checkbox" name="anonymous" class="rounded border-slate-600 bg-[var(--navy-2)]">
-            Anonymous
-          </label>
-          <button class="pill px-6 py-3 btn-gold" type="submit">Log entry</button>
-        </div>
-      </form>
-
-      <!-- Micro-coach -->
-      <div id="coach" class="max-w-3xl mx-auto hidden rounded-2xl border border-emerald-400/40 p-5 glass text-emerald-100">
-        <p class="font-medium">Entry saved. Thank you.</p>
-        <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
-      </div>
     </section>
   </div>
 
@@ -114,7 +54,6 @@
     // ===== CONFIG =====
     const PASSWORD = "Daddy";
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";      // paste your Apps Script Web App URL
-    const MAX_SECONDS = 120;  // 2 minutes
     // ==================
 
     const gate = document.getElementById('gate');
@@ -122,27 +61,13 @@
     const gateForm = document.getElementById('gateForm');
     const lockStatus = document.getElementById('lockStatus');
     const rememberMe = document.getElementById('rememberMe');
-    const offlineBanner = document.getElementById('offlineBanner');
 
-    const quickBtn = document.getElementById('quickBtn');
-    const fullBtn  = document.getElementById('fullBtn');
-    const quickForm= document.getElementById('quickForm');
-    const coach    = document.getElementById('coach');
-    const sosBtn   = document.getElementById('sosBtn');
-    let sos = false;
-
-    function isEndpointConfigured(){ return (ENDPOINT||"").trim().length>0; }
     function showDiary(){
-      gate.classList.add('hidden'); diary.classList.remove('hidden'); lockStatus.textContent='🔓 Unlocked';
-      if (!isEndpointConfigured()) offlineBanner.classList.remove('hidden');
+      gate.classList.add('hidden');
+      // (rest of diary will be shown here when you add forms/voice notes)
+      lockStatus.textContent = '🔓 Unlocked';
     }
 
-    // Remember-me auto unlock
-    (function init(){
-      if (localStorage.getItem('diary_unlocked') === 'true') showDiary();
-    })();
-
-    // Unlock
     gateForm.addEventListener('submit', e => {
       e.preventDefault();
       const val = gateForm.querySelector('input[type="password"]').value;
@@ -150,71 +75,6 @@
         if (rememberMe.checked) localStorage.setItem('diary_unlocked','true');
         showDiary();
       } else alert('Incorrect password');
-    });
-
-    // Mode toggle
-    quickBtn?.addEventListener('click', () => {
-      quickBtn.className='px-3 py-1 pill text-sm bg-white text-[var(--navy)]';
-      fullBtn.className='px-3 py-1 pill text-sm border border-slate-600';
-      quickForm.classList.remove('hidden');
-    });
-    fullBtn?.addEventListener('click', () => {
-      fullBtn.className='px-3 py-1 pill text-sm bg-white text-[var(--navy)]';
-      quickBtn.className='px-3 py-1 pill text-sm border border-slate-600';
-      // full form omitted for brevity in this cut—keep quick form visible
-    });
-
-    // SOS toggle (gold pulse when on)
-    sosBtn.addEventListener('click',()=>{ sos=!sos; sosBtn.classList.toggle('sos-on',sos); });
-
-    // Voice recorder
-    const recBtn=document.getElementById('recBtn'), stopBtn=document.getElementById('stopBtn'),
-          timer=document.getElementById('timer'), audioWrap=document.getElementById('audioWrap'),
-          audioPreview=document.getElementById('audioPreview'), discardAudio=document.getElementById('discardAudio');
-    let mediaRecorder=null, audioChunks=[], audioBlob=null, timerInterval=null, seconds=0;
-
-    recBtn.addEventListener('click', async ()=>{
-      try{
-        const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-        audioChunks=[]; mediaRecorder=new MediaRecorder(stream);
-        mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
-        mediaRecorder.onstop=()=>{
-          audioBlob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
-          audioPreview.src=URL.createObjectURL(audioBlob);
-          audioWrap.classList.remove('hidden'); recBtn.classList.remove('hidden');
-          stopBtn.classList.add('hidden'); timer.classList.add('hidden');
-          clearInterval(timerInterval); stream.getTracks().forEach(t=>t.stop());
-        };
-        mediaRecorder.start();
-        recBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); timer.classList.remove('hidden');
-        seconds=0; timer.textContent="00:00";
-        timerInterval=setInterval(()=>{ seconds++; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); timer.textContent=`${m}:${s}`; if(seconds>=MAX_SECONDS) mediaRecorder.stop(); },1000);
-      }catch{ alert('Microphone access denied or unavailable.'); }
-    });
-    stopBtn.addEventListener('click',()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
-    discardAudio.addEventListener('click',()=>{ audioBlob=null; audioWrap.classList.add('hidden'); recBtn.classList.remove('hidden'); });
-
-    // Submit quick
-    async function blobToDataURL(b){ if(!b) return null; return new Promise(r=>{ const fr=new FileReader(); fr.onloadend=()=>r(fr.result); fr.readAsDataURL(b); }); }
-    quickForm.addEventListener('submit', async e=>{
-      e.preventDefault();
-      const fd=new FormData(quickForm);
-      const payload={
-        mode:'quick',
-        timestamp:new Date().toISOString(),
-        what_happened:fd.get('what_happened')||'',
-        anonymous:fd.get('anonymous')==='on',
-        device:navigator.userAgent||'',
-        sos:!!sos,
-        audioDataURL: await blobToDataURL(audioBlob)
-      };
-      try{
-        if(isEndpointConfigured()){
-          await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        }
-      }catch{}
-      coach.classList.remove('hidden'); setTimeout(()=>coach.classList.add('hidden'),5000);
-      quickForm.reset(); if(audioBlob) discardAudio.click(); sos=false; sosBtn.classList.remove('sos-on');
     });
   </script>
 </body>
