@@ -7,31 +7,44 @@
   <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, and offline queue.">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { --navy:#0a1b2b; --navy-2:#0f2438; }
+    :root { --navy:#0a1b2b; --navy-2:#0f2438; --gold:#FFD700; }
     @keyframes breathe { 0%{transform:scale(1);opacity:.6} 50%{transform:scale(1.06);opacity:1} 100%{transform:scale(1);opacity:.6} }
     @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
     .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
     .btn { border-radius: 12px; }
     .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 700; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
     .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 24px rgba(255,215,0,1); }
-    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important; color: var(--navy) !important; border-color: transparent !important; animation: pulseGold 1.6s ease-in-out infinite; font-weight: 700; }
+    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
     .badge { border-radius: 10px; padding:.15rem .5rem; border:1px solid rgb(71 85 105); }
 
-    /* Top-right toast */
-    .toast {
-      position: fixed; top: 1rem; right: 1rem; z-index: 50;
-      background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.35);
-      color: #d1fae5; padding: .75rem 1rem; border-radius: 12px; backdrop-filter: blur(8px);
-      opacity: 0; transform: translateY(-6px); pointer-events: none;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-
     /* Save-button micro “haptic” bounce */
     @keyframes btnBounce { 0%{transform:scale(1)} 45%{transform:scale(.98)} 100%{transform:scale(1)} }
     .btn-bounce { animation: btnBounce .18s ease-out; }
+
+    /* Dramatic toast beside the Save button */
+    @keyframes popSlide {
+      0%   { opacity:0; transform:scale(.8) translateY(8px); }
+      60%  { opacity:1; transform:scale(1.05) translateY(-2px); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    .entry-toast {
+      position:absolute;
+      left:100%; top:50%;
+      margin-left:.75rem;
+      transform:translateY(-50%);
+      background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000);
+      color:var(--navy);
+      font-weight:700;
+      padding:.6rem .8rem;
+      border-radius:.75rem;
+      box-shadow:0 6px 16px rgba(0,0,0,.25);
+      opacity:0;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    .entry-toast.show { animation:popSlide .45s cubic-bezier(.22,.8,.3,1) forwards; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
@@ -135,9 +148,10 @@
           <input id="qOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
 
-        <!-- Save button directly under tags -->
-        <div class="flex justify-end">
+        <!-- Save button directly under tags, with local toast -->
+        <div class="flex items-center gap-3 relative justify-end">
           <button id="quickSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
+          <div id="quickEntryToast" class="entry-toast">Thank you for trusting me with this! 😉</div>
         </div>
       </form>
 
@@ -181,9 +195,10 @@
           <input id="fOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
 
-        <!-- Save button ABOVE private section -->
-        <div class="flex justify-end">
+        <!-- Save button ABOVE private section, with local toast -->
+        <div class="flex items-center gap-3 relative justify-end">
           <button id="fullSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
+          <div id="fullEntryToast" class="entry-toast">Thank you for trusting me with this! 😉</div>
         </div>
 
         <!-- Private vent (NOT sent) -->
@@ -203,16 +218,13 @@
             placeholder="Optional: let it out. We won’t transmit or store this."></textarea>
         </div>
       </form>
-
-      <!-- Success toast -->
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
   </div>
 
   <script>
     // ===== CONFIG =====
     const PASSWORD = "Daddy";        // change if needed
-    const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";             // paste your Apps Script Web App URL
+    const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";
     const MAX_SECONDS = 120;         // voice auto-stop at 2 minutes
     // ==================
 
@@ -235,9 +247,10 @@
     const fOther   = document.getElementById('fOther');
     const fOtherText = document.getElementById('fOtherText');
     const ventBox  = document.getElementById('ventBox');
-    const toastEl  = document.getElementById('toast');
     const quickSaveBtn = document.getElementById('quickSaveBtn');
     const fullSaveBtn  = document.getElementById('fullSaveBtn');
+    const quickEntryToast = document.getElementById('quickEntryToast');
+    const fullEntryToast  = document.getElementById('fullEntryToast');
     let sos=false, lastSubmitBtn=null;
 
     // Remember which submit button was pressed (for bounce)
@@ -263,14 +276,7 @@
       updateQueueBanner();
     }
 
-    // Toast + haptic bounce
-    function showToast(msg){
-      if (!toastEl) return;
-      toastEl.textContent = msg;
-      toastEl.classList.add('show');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(()=>toastEl.classList.remove('show'), 3200);
-    }
+    // Haptic bounce
     function bounce(el){
       if (!el) return;
       el.classList.remove('btn-bounce'); void el.offsetWidth; el.classList.add('btn-bounce');
@@ -322,7 +328,8 @@
         mediaRecorder.start();
         recBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); timer.classList.remove('hidden');
         seconds=0; timer.textContent="00:00";
-        timerInterval=setInterval(()=>{ seconds++; 
+        timerInterval=setInterval(()=>{ 
+          seconds++; 
           const m=String(Math.floor(seconds/60)).padStart(2,'0'); 
           const s=String(seconds%60).padStart(2,'0'); 
           timer.textContent=`${m}:${s}`; 
@@ -345,9 +352,20 @@
       const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]'); q.push(payload);
       localStorage.setItem('offline_queue_json', JSON.stringify(q)); updateQueueBanner();
     }
-    function afterSubmit(){
-      showToast("Thank you for trusting me with this! 😉");
-      bounce(lastSubmitBtn);
+
+    function showEntryToast(which){
+      const el = which === 'quick' ? quickEntryToast : fullEntryToast;
+      if (!el) return;
+      el.classList.remove('show');
+      void el.offsetWidth; // reset animation
+      el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'), 3000);
+    }
+
+    function afterSubmit(which){
+      showEntryToast(which);
+      bounce(which==='quick' ? quickSaveBtn : fullSaveBtn);
+      // cleanup
       quickForm.reset(); fullForm.reset();
       if(qOther.checked) { qOther.checked=false; qOtherText.value=""; qOtherText.classList.add('hidden'); }
       if(fOther.checked) { fOther.checked=false; fOtherText.value=""; fOtherText.classList.add('hidden'); }
@@ -355,6 +373,7 @@
       if(audioBlob) discardAudio.click();
       sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
     }
+
     function collectTags(formEl, otherChecked, otherTextEl){
       const fd = new FormData(formEl);
       let tags = fd.getAll('tags');
@@ -376,8 +395,8 @@
         sos:!!sos,
         audioDataURL: await blobToDataURL(audioBlob)
       };
-      try { await postJSON(payload); afterSubmit(); }
-      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
+      try { await postJSON(payload); afterSubmit('quick'); }
+      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit('quick'); }
     });
 
     // FULL submit (ventBox is PRIVATE and excluded)
@@ -395,8 +414,8 @@
         sos:!!sos,
         audioDataURL: await blobToDataURL(audioBlob)
       };
-      try { await postJSON(payload); afterSubmit(); }
-      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
+      try { await postJSON(payload); afterSubmit('full'); }
+      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit('full'); }
     });
 
     // Send queued
