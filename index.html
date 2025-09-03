@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TAITEQ — Care Manager Diary</title>
-  <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, offline queue.">
+  <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, and offline queue.">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { --navy:#0a1b2b; --navy-2:#0f2438; }
@@ -18,7 +18,20 @@
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
     .badge { border-radius: 10px; padding:.15rem .5rem; border:1px solid rgb(71 85 105); }
-    .field { @apply w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100; }
+
+    /* Top-right toast */
+    .toast {
+      position: fixed; top: 1rem; right: 1rem; z-index: 50;
+      background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.35);
+      color: #d1fae5; padding: .75rem 1rem; border-radius: 12px; backdrop-filter: blur(8px);
+      opacity: 0; transform: translateY(-6px); pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Save-button micro “haptic” bounce */
+    @keyframes btnBounce { 0%{transform:scale(1)} 45%{transform:scale(.98)} 100%{transform:scale(1)} }
+    .btn-bounce { animation: btnBounce .18s ease-out; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
@@ -55,9 +68,8 @@
       </form>
     </section>
 
-    <!-- Diary (shown after unlock) -->
+    <!-- Diary -->
     <section id="diary" class="hidden mt-8 space-y-8">
-      <!-- Top controls -->
       <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-4">
         <span class="text-base text-slate-300">Mode:</span>
         <button id="quickBtn" class="chip chip-active text-sm">Quick</button>
@@ -66,7 +78,7 @@
         <button id="sosBtn" class="chip text-sm" title="Flag as critical">SOS</button>
       </div>
 
-      <!-- Offline + Queue banners -->
+      <!-- Banners -->
       <div id="offlineBanner" class="hidden max-w-3xl mx-auto rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm">
         No endpoint configured — entries will be saved locally until you add one.
       </div>
@@ -123,36 +135,24 @@
           <input id="qOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
 
-        <fieldset class="text-base">
-          <legend class="mb-2">Frustration level</legend>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="1" required class="h-4 w-4"> 1 — Calm</label>
-            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="2" class="h-4 w-4"> 2 — Okay</label>
-            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="3" class="h-4 w-4"> 3 — Tense</label>
-            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="4" class="h-4 w-4"> 4 — Stressed</label>
-            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="5" class="h-4 w-4"> 5 — Overwhelmed</label>
-          </div>
-        </fieldset>
-
+        <!-- Save button directly under tags -->
         <div class="flex justify-end">
-          <button class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
+          <button id="quickSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
       </form>
 
       <!-- FULL MODE -->
       <form id="fullForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5 hidden">
-        <div class="grid sm:grid-cols-2 gap-4">
-          <label class="text-base">Mood now
-            <select name="mood" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3">
-              <option value="1">🙂 Calm</option>
-              <option value="2">😐 Okay</option>
-              <option value="3">😕 Tense</option>
-              <option value="4">😣 Stressed</option>
-              <option value="5">😫 Overwhelmed</option>
-            </select>
-          </label>
-          <span></span>
-        </div>
+        <label class="text-base">How this pain point makes you feel
+          <select name="mood" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3">
+            <option value="1">🙂 Calm</option>
+            <option value="2">😐 Okay</option>
+            <option value="3">😕 Tense</option>
+            <option value="4">😣 Stressed</option>
+            <option value="5">😫 Overwhelmed</option>
+          </select>
+          <p class="text-xs text-slate-300 mt-1">Choose how this specific pain point is making you feel right now.</p>
+        </label>
 
         <label class="text-base">Pain point
           <textarea name="pain_point" rows="3"
@@ -181,6 +181,11 @@
           <input id="fOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
 
+        <!-- Save button ABOVE private section -->
+        <div class="flex justify-end">
+          <button id="fullSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
+        </div>
+
         <!-- Private vent (NOT sent) -->
         <div class="rounded-xl border border-slate-700 p-4">
           <div class="flex items-center gap-2">
@@ -188,31 +193,26 @@
             <p class="font-semibold">The Locker-Room Vent (your private bench)</p>
           </div>
           <p class="text-sm text-slate-300 mt-1">
-            Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent.
-            Growl, vent, or type “I’m fine 💪” if you’d rather smirk at it.
+            <strong>Busy often means Overwhelmed.</strong> Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent. Growl, vent, or type “I’m fine 💪” if you’d rather smirk at it.
+          </p>
+          <p class="text-xs text-slate-400 mt-2">
+            Optional: let it out. We won't transmit or store this.
           </p>
           <textarea id="ventBox" rows="3"
             class="mt-3 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
             placeholder="Optional: let it out. We won’t transmit or store this."></textarea>
         </div>
-
-        <div class="flex justify-end">
-          <button class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
-        </div>
       </form>
 
-      <!-- After-submit coach -->
-      <div id="coach" class="max-w-3xl mx-auto hidden rounded-2xl border border-emerald-400/40 p-6 glass text-emerald-100">
-        <p id="coachText" class="font-medium text-lg">Entry saved. Thanks — you’re carrying a lot.</p>
-        <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
-      </div>
+      <!-- Success toast -->
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
   </div>
 
   <script>
     // ===== CONFIG =====
-    const PASSWORD = "Daddy";        // change if you like
-    const ENDPOINT = "";             // paste your Apps Script Web App URL
+    const PASSWORD = "Daddy";        // change if needed
+    const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";             // paste your Apps Script Web App URL
     const MAX_SECONDS = 120;         // voice auto-stop at 2 minutes
     // ==================
 
@@ -229,14 +229,19 @@
     const fullBtn  = document.getElementById('fullBtn');
     const quickForm= document.getElementById('quickForm');
     const fullForm = document.getElementById('fullForm');
-    const coach    = document.getElementById('coach');
-    const coachText= document.getElementById('coachText');
     const sosBtn   = document.getElementById('sosBtn');
     const qOther   = document.getElementById('qOther');
     const qOtherText = document.getElementById('qOtherText');
     const fOther   = document.getElementById('fOther');
     const fOtherText = document.getElementById('fOtherText');
-    let sos=false;
+    const ventBox  = document.getElementById('ventBox');
+    const toastEl  = document.getElementById('toast');
+    const quickSaveBtn = document.getElementById('quickSaveBtn');
+    const fullSaveBtn  = document.getElementById('fullSaveBtn');
+    let sos=false, lastSubmitBtn=null;
+
+    // Remember which submit button was pressed (for bounce)
+    [quickSaveBtn, fullSaveBtn].forEach(btn => btn && btn.addEventListener('click', () => { lastSubmitBtn = btn; }));
 
     // Voice bits
     const recBtn=document.getElementById('recBtn'), stopBtn=document.getElementById('stopBtn'),
@@ -256,6 +261,19 @@
       lockStatus.textContent = '🔓 Unlocked';
       if (!isEndpointConfigured()) offlineBanner.classList.remove('hidden');
       updateQueueBanner();
+    }
+
+    // Toast + haptic bounce
+    function showToast(msg){
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>toastEl.classList.remove('show'), 3200);
+    }
+    function bounce(el){
+      if (!el) return;
+      el.classList.remove('btn-bounce'); void el.offsetWidth; el.classList.add('btn-bounce');
     }
 
     // Auto-unlock
@@ -304,7 +322,12 @@
         mediaRecorder.start();
         recBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); timer.classList.remove('hidden');
         seconds=0; timer.textContent="00:00";
-        timerInterval=setInterval(()=>{ seconds++; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); timer.textContent=`${m}:${s}`; if(seconds>=MAX_SECONDS) mediaRecorder.stop(); },1000);
+        timerInterval=setInterval(()=>{ seconds++; 
+          const m=String(Math.floor(seconds/60)).padStart(2,'0'); 
+          const s=String(seconds%60).padStart(2,'0'); 
+          timer.textContent=`${m}:${s}`; 
+          if(seconds>=MAX_SECONDS) mediaRecorder.stop(); 
+        },1000);
       }catch{ alert('Microphone access denied or unavailable.'); }
     });
     stopBtn.addEventListener('click',()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
@@ -323,15 +346,15 @@
       localStorage.setItem('offline_queue_json', JSON.stringify(q)); updateQueueBanner();
     }
     function afterSubmit(){
-      coachText.textContent = "Entry saved. Thanks — you’re carrying a lot.";
-      coach.classList.remove('hidden'); setTimeout(()=>coach.classList.add('hidden'), 6000);
+      showToast("Thank you for trusting me with this! 😉");
+      bounce(lastSubmitBtn);
       quickForm.reset(); fullForm.reset();
       if(qOther.checked) { qOther.checked=false; qOtherText.value=""; qOtherText.classList.add('hidden'); }
       if(fOther.checked) { fOther.checked=false; fOtherText.value=""; fOtherText.classList.add('hidden'); }
+      if(ventBox) ventBox.value = "";
       if(audioBlob) discardAudio.click();
       sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
     }
-
     function collectTags(formEl, otherChecked, otherTextEl){
       const fd = new FormData(formEl);
       let tags = fd.getAll('tags');
@@ -346,10 +369,8 @@
       const payload={
         mode:'quick',
         timestamp:new Date().toISOString(),
-        // map to backend columns
         what_happened: fd.get('pain_point') || '',
         ideal: fd.get('proposed_solution') || '',
-        frustration: fd.get('frustration') || '',
         tags: collectTags(quickForm, qOther.checked, qOtherText),
         device:navigator.userAgent||'',
         sos:!!sos,
@@ -359,7 +380,7 @@
       catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
     });
 
-    // FULL submit (note: ventBox is PRIVATE and excluded)
+    // FULL submit (ventBox is PRIVATE and excluded)
     fullForm.addEventListener('submit', async e=>{
       e.preventDefault();
       const fd=new FormData(fullForm);
