@@ -4,17 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TAITEQ — Care Manager Diary</title>
-  <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, and offline queue.">
+  <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, offline queue.">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { --navy:#0a1b2b; --navy-2:#0f2438; }
     @keyframes breathe { 0%{transform:scale(1);opacity:.6} 50%{transform:scale(1.06);opacity:1} 100%{transform:scale(1);opacity:.6} }
     @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
     .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
-    .pill { border-radius: 999px; }
+    .btn { border-radius: 12px; }
     .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 700; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
-    .btn-gold:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(255,215,0,1); }
+    .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 24px rgba(255,215,0,1); }
     .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important; color: var(--navy) !important; border-color: transparent !important; animation: pulseGold 1.6s ease-in-out infinite; font-weight: 700; }
+    .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
+    .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
@@ -46,24 +48,35 @@
             <input type="checkbox" id="rememberMe" class="h-5 w-5 rounded border-slate-500 bg-[var(--navy-2)]" />
             Remember me
           </label>
-          <button class="pill px-8 py-4 text-lg btn-gold" type="submit">Unlock</button>
+          <button class="btn btn-gold px-8 py-4 text-lg" type="submit">Unlock</button>
         </div>
       </form>
     </section>
 
     <!-- Diary (shown after unlock) -->
     <section id="diary" class="hidden mt-8 space-y-8">
-      <div class="max-w-3xl mx-auto hidden rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm" id="offlineBanner">
-        No endpoint configured — entries will be saved locally until you add one.
-      </div>
-
-      <!-- Controls row -->
+      <!-- Top controls -->
       <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-4">
         <span class="text-base text-slate-300">Mode:</span>
-        <button id="quickBtn" class="px-4 py-2 pill text-base bg-white text-[var(--navy)]">Quick</button>
-        <button id="fullBtn" class="px-4 py-2 pill text-base border border-slate-600">Full</button>
+        <button id="quickBtn" class="chip chip-active text-sm">Quick</button>
+        <button id="fullBtn" class="chip text-sm">Full</button>
         <span class="grow"></span>
-        <button id="sosBtn" class="px-4 py-2 pill text-base border border-slate-600" title="Flag as critical">SOS</button>
+        <button id="sosBtn" class="chip text-sm" title="Flag as critical">SOS</button>
+      </div>
+
+      <!-- Tone toggle -->
+      <div class="max-w-3xl mx-auto flex items-center gap-3 text-sm">
+        <span class="text-slate-300">Tone:</span>
+        <button id="tonePro" class="chip chip-active">Professional</button>
+        <button id="tonePlay" class="chip">Playful</button>
+      </div>
+
+      <!-- Offline + Queue banners -->
+      <div id="offlineBanner" class="hidden max-w-3xl mx-auto rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm">
+        No endpoint configured — entries will be saved locally until you add one.
+      </div>
+      <div class="max-w-3xl mx-auto rounded-xl border border-emerald-300/50 bg-emerald-200/10 text-emerald-100 p-3 text-sm hidden" id="queueBanner">
+        You have <span id="queueCount">0</span> unsent entry(ies). <button id="sendQueue" class="underline font-medium">Send now</button>
       </div>
 
       <!-- Voice note -->
@@ -71,13 +84,13 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="font-semibold text-lg">Optional voice note</p>
-            <p class="text-sm opacity-70">Auto-stops at 2:00.</p>
+            <p class="text-sm opacity-70">Record a short note. Auto-stops at 2:00.</p>
           </div>
           <div class="text-sm" id="micStatus">🎙️ Ready</div>
         </div>
         <div class="mt-4 flex flex-wrap items-center gap-4">
-          <button id="recBtn" class="pill px-5 py-3 bg-white text-[var(--navy)] font-medium">Start recording</button>
-          <button id="stopBtn" class="pill px-5 py-3 border border-slate-600 hidden">Stop</button>
+          <button id="recBtn" class="btn px-5 py-3 bg-white text-[var(--navy)] font-medium">Start recording</button>
+          <button id="stopBtn" class="btn px-5 py-3 border border-slate-600 hidden">Stop</button>
           <span id="timer" class="text-sm opacity-70 hidden">00:00</span>
         </div>
         <div id="audioWrap" class="mt-3 hidden">
@@ -88,40 +101,55 @@
 
       <!-- Quick form -->
       <form id="quickForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5">
-        <label class="text-base">What happened?
+        <label class="text-base">What happened? (short note)
           <textarea name="what_happened" rows="3"
-            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"></textarea>
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="Optional if you used a voice note..."></textarea>
         </label>
+
+        <label class="text-base">Time lost so far
+          <select name="time_lost" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3">
+            <option>&lt; 5 min</option><option>5–15 min</option><option>15–30 min</option>
+            <option>30–60 min</option><option>1–2 hours</option><option>2+ hours</option>
+          </select>
+        </label>
+
+        <fieldset class="text-base">
+          <legend class="mb-2">Frustration level</legend>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="1" required class="h-4 w-4"> 1 — Calm</label>
+            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="2" class="h-4 w-4"> 2 — Okay</label>
+            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="3" class="h-4 w-4"> 3 — Tense</label>
+            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="4" class="h-4 w-4"> 4 — Stressed</label>
+            <label class="flex items-center gap-2"><input type="radio" name="frustration" value="5" class="h-4 w-4"> 5 — Overwhelmed</label>
+          </div>
+        </fieldset>
 
         <div class="flex items-center justify-between">
           <label class="text-base text-slate-300 flex items-center gap-2">
             <input type="checkbox" name="anonymous" class="h-5 w-5 rounded border-slate-600 bg-[var(--navy-2)]">
-            Anonymous
+            Submit anonymously
           </label>
-          <button class="pill px-7 py-3 text-lg btn-gold" type="submit">Log entry</button>
+          <button class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
       </form>
 
       <!-- After-submit coach -->
       <div id="coach" class="max-w-3xl mx-auto hidden rounded-2xl border border-emerald-400/40 p-6 glass text-emerald-100">
-        <p class="font-medium text-lg">Entry saved. Thank you.</p>
+        <p id="coachText" class="font-medium text-lg">Entry saved. Thank you.</p>
         <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
-      </div>
-
-      <!-- Offline queue banner -->
-      <div class="max-w-3xl mx-auto rounded-xl border border-emerald-300/50 bg-emerald-200/10 text-emerald-100 p-3 text-sm hidden" id="queueBanner">
-        You have <span id="queueCount">0</span> unsent entry(ies). <button id="sendQueue" class="underline font-medium">Send now</button>
       </div>
     </section>
   </div>
 
   <script>
     // ===== CONFIG =====
-    const PASSWORD = "Daddy";      // change if you like
-    const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";           // paste your Apps Script Web App URL
-    const MAX_SECONDS = 120;       // voice auto-stop at 2 minutes
+    const PASSWORD = "Daddy";        // change if you like
+    const ENDPOINT = "";             // paste your Apps Script Web App URL
+    const MAX_SECONDS = 120;         // voice auto-stop at 2 minutes
     // ==================
 
+    // Elements
     const gate = document.getElementById('gate');
     const diary = document.getElementById('diary');
     const gateForm = document.getElementById('gateForm');
@@ -131,20 +159,23 @@
     const queueBanner = document.getElementById('queueBanner');
     const queueCount = document.getElementById('queueCount');
     const sendQueue = document.getElementById('sendQueue');
-
     const quickBtn = document.getElementById('quickBtn');
     const fullBtn  = document.getElementById('fullBtn');
     const quickForm= document.getElementById('quickForm');
     const coach    = document.getElementById('coach');
+    const coachText= document.getElementById('coachText');
     const sosBtn   = document.getElementById('sosBtn');
+    const tonePro  = document.getElementById('tonePro');
+    const tonePlay = document.getElementById('tonePlay');
+    let playful = false;
 
-    // Voice elements
+    // Voice bits
     const recBtn=document.getElementById('recBtn'), stopBtn=document.getElementById('stopBtn'),
           timer=document.getElementById('timer'), audioWrap=document.getElementById('audioWrap'),
           audioPreview=document.getElementById('audioPreview'), discardAudio=document.getElementById('discardAudio');
-
     let mediaRecorder=null, audioChunks=[], audioBlob=null, timerInterval=null, seconds=0, sos=false;
 
+    // Helpers
     function isEndpointConfigured(){ return (ENDPOINT||"").trim().length>0; }
     function updateQueueBanner(){
       const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
@@ -159,7 +190,7 @@
       updateQueueBanner();
     }
 
-    // Auto-unlock if remembered
+    // Auto-unlock
     (function init(){ if (localStorage.getItem('diary_unlocked') === 'true') showDiary(); })();
 
     // Unlock
@@ -172,17 +203,21 @@
       } else alert('Incorrect password');
     });
 
-    // Mode buttons (keep just quick visible in this version)
+    // Mode tabs (keep Quick visible; Full omitted here)
     quickBtn.addEventListener('click', () => {
-      quickBtn.className='px-4 py-2 pill text-base bg-white text-[var(--navy)]';
-      fullBtn.className='px-4 py-2 pill text-base border border-slate-600';
+      quickBtn.classList.add('chip-active'); fullBtn.classList.remove('chip-active');
       quickForm.classList.remove('hidden');
     });
     fullBtn.addEventListener('click', () => {
-      fullBtn.className='px-4 py-2 pill text-base bg-white text-[var(--navy)]';
-      quickBtn.className='px-4 py-2 pill text-base border border-slate-600';
-      // (Full form omitted in this trimmed build)
+      fullBtn.classList.add('chip-active'); quickBtn.classList.remove('chip-active');
+      alert('Full mode coming next. Quick mode is ready now.');
     });
+
+    // Tone toggle
+    function setTone(p){ playful = p; tonePro.classList.toggle('chip-active', !p); tonePlay.classList.toggle('chip-active', p); }
+    tonePro.addEventListener('click', ()=>setTone(false));
+    tonePlay.addEventListener('click', ()=>setTone(true));
+    setTone(false);
 
     // SOS toggle
     sosBtn.addEventListener('click',()=>{ sos=!sos; sosBtn.classList.toggle('sos-on',sos); });
@@ -209,7 +244,7 @@
     stopBtn.addEventListener('click',()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
     discardAudio.addEventListener('click',()=>{ audioBlob=null; audioWrap.classList.add('hidden'); recBtn.classList.remove('hidden'); });
 
-    // Helpers
+    // Submit logic
     async function blobToDataURL(b){ if(!b) return null; return new Promise(r=>{ const fr=new FileReader(); fr.onloadend=()=>r(fr.result); fr.readAsDataURL(b); }); }
     async function postJSON(payload){
       if (!isEndpointConfigured()) throw new Error('No endpoint');
@@ -222,11 +257,13 @@
       localStorage.setItem('offline_queue_json', JSON.stringify(q)); updateQueueBanner();
     }
     function afterSubmit(){
+      coachText.textContent = playful
+        ? "Saved. I’ve got you — thank you for trusting me with this. 😉"
+        : "Entry saved. Thank you for logging this — take a slow breath in and out.";
       coach.classList.remove('hidden'); setTimeout(()=>coach.classList.add('hidden'), 6000);
       quickForm.reset(); if(audioBlob) discardAudio.click(); sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
     }
 
-    // Submit quick
     quickForm.addEventListener('submit', async e=>{
       e.preventDefault();
       const fd=new FormData(quickForm);
@@ -234,17 +271,19 @@
         mode:'quick',
         timestamp:new Date().toISOString(),
         what_happened:fd.get('what_happened')||'',
+        time_lost:fd.get('time_lost')||'',
+        frustration:fd.get('frustration')||'',
         anonymous:fd.get('anonymous')==='on',
         device:navigator.userAgent||'',
         sos:!!sos,
         audioDataURL: await blobToDataURL(audioBlob)
       };
       try { await postJSON(payload); afterSubmit(); }
-      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
+      catch { queueLocally(payload); alert('Saved locally. Tap \"Send now\" later to upload.'); afterSubmit(); }
     });
 
     // Send queued
-    sendQueue.addEventListener('click', async ()=>{
+    sendQueue?.addEventListener('click', async ()=>{
       if (!isEndpointConfigured()) return alert('Add an endpoint first.');
       const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
       let ok=0; for (const item of q){ try{ await postJSON(item); ok++; } catch(e){} }
