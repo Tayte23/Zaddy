@@ -14,8 +14,9 @@
     .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 24px rgba(255,215,0,1); }
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
-    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
     @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
+    /* SOS active look */
+    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
 
     /* Private badge: bold emerald */
     .badge {
@@ -40,13 +41,13 @@
     }
     .entry-toast {
       position:absolute;
-      right:0;           /* align under the button */
-      top:100%;          /* place below */
+      right:0;
+      top:100%;
       margin-top:.6rem;
       z-index: 30;
-      background: rgba(253, 230, 138, .18);         /* amber-300 translucent */
-      border: 1px solid rgba(253, 230, 138, .55);   /* subtle outline */
-      color: #FFF7CC;                               /* soft light yellow text */
+      background: rgba(253, 230, 138, .18);
+      border: 1px solid rgba(253, 230, 138, .55);
+      color: #FFF7CC;
       font-weight: 600;
       padding: .55rem .75rem;
       border-radius: .75rem;
@@ -100,7 +101,7 @@
         <button id="quickBtn" class="chip chip-active text-sm">Quick</button>
         <button id="fullBtn" class="chip text-sm">Full</button>
         <span class="grow"></span>
-        <button id="sosBtn" class="chip text-sm" title="Flag as critical">SOS</button>
+        <button id="sosBtn" class="chip text-sm" title="Flag as critical" aria-pressed="false">SOS</button>
       </div>
 
       <!-- QUICK MODE -->
@@ -230,6 +231,9 @@
     const quickEntryToast = document.getElementById('quickEntryToast');
     const fullEntryToast  = document.getElementById('fullEntryToast');
 
+    const sosBtn = document.getElementById('sosBtn');
+    let sos = false;
+
     // Unlock
     gateForm.addEventListener('submit', e => {
       e.preventDefault();
@@ -252,6 +256,13 @@
     fullBtn.addEventListener('click', () => {
       fullBtn.classList.add('chip-active'); quickBtn.classList.remove('chip-active');
       fullForm.classList.remove('hidden'); quickForm.classList.add('hidden');
+    });
+
+    // SOS toggle (fix)
+    sosBtn.addEventListener('click', () => {
+      sos = !sos;
+      sosBtn.classList.toggle('sos-on', sos);
+      sosBtn.setAttribute('aria-pressed', String(sos));
     });
 
     // Other reveal
@@ -281,13 +292,16 @@
         timestamp:new Date().toISOString(),
         what_happened: fd.get('pain_point') || '',
         ideal: fd.get('proposed_solution') || '',
-        tags: collectTags(quickForm, qOther.checked, qOtherText)
+        tags: collectTags(quickForm, qOther.checked, qOtherText),
+        sos
       };
       try {
         await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
       } catch (err) { /* offline fallback could be added */ }
       showEntryToast('quick'); bounce(quickSaveBtn);
       quickForm.reset(); qOther.checked=false; qOtherText.classList.add('hidden');
+      // reset SOS after submit
+      sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
     });
 
     // Submit: Full
@@ -300,7 +314,8 @@
         mood: fd.get('mood') || '',
         what_happened: fd.get('pain_point') || '',
         ideal: fd.get('ideal') || '',
-        tags: collectTags(fullForm, fOther.checked, fOtherText)
+        tags: collectTags(fullForm, fOther.checked, fOtherText),
+        sos
         // NOTE: ventBox intentionally excluded (never sent/stored)
       };
       try {
@@ -308,6 +323,8 @@
       } catch (err) { /* offline fallback could be added */ }
       showEntryToast('full'); bounce(fullSaveBtn);
       fullForm.reset(); fOther.checked=false; fOtherText.classList.add('hidden'); if (ventBox) ventBox.value='';
+      // reset SOS after submit
+      sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
     });
   </script>
 </body>
