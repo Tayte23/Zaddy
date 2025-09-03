@@ -15,7 +15,6 @@
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
     @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
-    /* SOS active look */
     .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
 
     /* Private badge: bold emerald */
@@ -102,6 +101,28 @@
         <button id="fullBtn" class="chip text-sm">Full</button>
         <span class="grow"></span>
         <button id="sosBtn" class="chip text-sm" title="Flag as critical" aria-pressed="false">SOS</button>
+      </div>
+
+      <!-- Voice note (shared) -->
+      <div class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-lg">Optional voice note</p>
+            <p class="text-sm opacity-70">Record a short note. Auto-stops at 2:00.</p>
+          </div>
+          <div id="micStatus" class="text-sm">🎙️ Ready</div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-4">
+          <button id="recBtn" class="btn px-5 py-3 bg-white text-[var(--navy)] font-medium">Start recording</button>
+          <button id="stopBtn" class="btn px-5 py-3 border border-slate-600 hidden">Stop</button>
+          <span id="timer" class="text-sm opacity-70 hidden">00:00</span>
+        </div>
+
+        <div id="audioWrap" class="mt-3 hidden">
+          <audio id="audioPreview" controls class="w-full"></audio>
+          <button id="discardAudio" class="mt-2 text-sm underline">Discard</button>
+        </div>
       </div>
 
       <!-- QUICK MODE -->
@@ -206,6 +227,7 @@
     // ===== CONFIG =====
     const PASSWORD = "Daddy";
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";
+    const MAX_SECONDS = 120; // 2 minutes auto-stop
     // ==================
 
     const gate = document.getElementById('gate');
@@ -234,6 +256,21 @@
     const sosBtn = document.getElementById('sosBtn');
     let sos = false;
 
+    // Voice elements
+    const recBtn = document.getElementById('recBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const timer = document.getElementById('timer');
+    const audioWrap = document.getElementById('audioWrap');
+    const audioPreview = document.getElementById('audioPreview');
+    const discardAudio = document.getElementById('discardAudio');
+    const micStatus = document.getElementById('micStatus');
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let seconds = 0;
+    let tInt = null;
+
     // Unlock
     gateForm.addEventListener('submit', e => {
       e.preventDefault();
@@ -258,7 +295,7 @@
       fullForm.classList.remove('hidden'); quickForm.classList.add('hidden');
     });
 
-    // SOS toggle (fix)
+    // SOS toggle
     sosBtn.addEventListener('click', () => {
       sos = !sos;
       sosBtn.classList.toggle('sos-on', sos);
@@ -268,6 +305,60 @@
     // Other reveal
     qOther.addEventListener('change', () => qOtherText.classList.toggle('hidden', !qOther.checked));
     fOther.addEventListener('change', () => fOtherText.classList.toggle('hidden', !fOther.checked));
+
+    // Voice: start
+    recBtn.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          audioPreview.src = URL.createObjectURL(audioBlob);
+          audioWrap.classList.remove('hidden');
+          micStatus.textContent = '🎙️ Ready';
+          // cleanup timer & ui
+          clearInterval(tInt);
+          seconds = 0;
+          timer.classList.add('hidden');
+          stopBtn.classList.add('hidden');
+          recBtn.classList.remove('hidden');
+          // stop mic tracks
+          stream.getTracks().forEach(t => t.stop());
+        };
+        mediaRecorder.start();
+        micStatus.textContent = '⏺️ Recording…';
+        recBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        timer.classList.remove('hidden');
+        seconds = 0;
+        timer.textContent = '00:00';
+        tInt = setInterval(() => {
+          seconds++;
+          const m = String(Math.floor(seconds/60)).padStart(2,'0');
+          const s = String(seconds%60).padStart(2,'0');
+          timer.textContent = `${m}:${s}`;
+          if (seconds >= MAX_SECONDS && mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        }, 1000);
+      } catch (err) {
+        alert('Microphone access denied or unavailable.');
+      }
+    });
+
+    // Voice: stop
+    stopBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    });
+
+    // Voice: discard
+    discardAudio.addEventListener('click', () => {
+      audioBlob = null;
+      audioPreview.removeAttribute('src');
+      audioWrap.classList.add('hidden');
+    });
 
     // Helpers
     function bounce(el){ el.classList.remove('btn-bounce'); void el.offsetWidth; el.classList.add('btn-bounce'); }
@@ -282,6 +373,14 @@
       if (otherChecked && otherTextEl.value.trim()) tags.push("Other: " + otherTextEl.value.trim());
       return tags;
     }
+    function blobToDataURL(b){
+      return new Promise(res => {
+        if (!b) return res(null);
+        const fr = new FileReader();
+        fr.onloadend = () => res(fr.result);
+        fr.readAsDataURL(b);
+      });
+    }
 
     // Submit: Quick
     quickForm.addEventListener('submit', async (e) => {
@@ -293,14 +392,16 @@
         what_happened: fd.get('pain_point') || '',
         ideal: fd.get('proposed_solution') || '',
         tags: collectTags(quickForm, qOther.checked, qOtherText),
-        sos
+        sos,
+        audioDataURL: await blobToDataURL(audioBlob)
       };
       try {
         await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      } catch (err) { /* offline fallback could be added */ }
+      } catch (err) { /* optional offline queue here */ }
       showEntryToast('quick'); bounce(quickSaveBtn);
+      // reset form + audio + sos
       quickForm.reset(); qOther.checked=false; qOtherText.classList.add('hidden');
-      // reset SOS after submit
+      if (audioBlob) { audioBlob=null; audioWrap.classList.add('hidden'); audioPreview.removeAttribute('src'); }
       sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
     });
 
@@ -315,15 +416,17 @@
         what_happened: fd.get('pain_point') || '',
         ideal: fd.get('ideal') || '',
         tags: collectTags(fullForm, fOther.checked, fOtherText),
-        sos
+        sos,
+        audioDataURL: await blobToDataURL(audioBlob)
         // NOTE: ventBox intentionally excluded (never sent/stored)
       };
       try {
         await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      } catch (err) { /* offline fallback could be added */ }
+      } catch (err) { /* optional offline queue here */ }
       showEntryToast('full'); bounce(fullSaveBtn);
+      // reset form + audio + sos
       fullForm.reset(); fOther.checked=false; fOtherText.classList.add('hidden'); if (ventBox) ventBox.value='';
-      // reset SOS after submit
+      if (audioBlob) { audioBlob=null; audioWrap.classList.add('hidden'); audioPreview.removeAttribute('src'); }
       sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
     });
   </script>
