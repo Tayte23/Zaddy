@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAITEQ — Care Manager Diary</title>
+  <meta name="description" content="Password-protected diary for care managers with voice notes, SOS, and offline queue.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --navy:#0a1b2b; --navy-2:#0f2438; }
+    @keyframes breathe { 0%{transform:scale(1);opacity:.6} 50%{transform:scale(1.06);opacity:1} 100%{transform:scale(1);opacity:.6} }
+    @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
+    .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
+    .pill { border-radius: 999px; }
+    .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 700; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
+    .btn-gold:hover { filter: brightness(1.1); box-shadow: 0 0 24px rgba(255,215,0,1); }
+    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000) !important; color: var(--navy) !important; border-color: transparent !important; animation: pulseGold 1.6s ease-in-out infinite; font-weight: 700; }
+  </style>
+</head>
+<body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
+  <div class="max-w-5xl mx-auto px-6 py-10">
+    <!-- Header -->
+    <header class="mb-8 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl grid place-items-center bg-white">
+          <span class="text-[var(--navy)] font-bold text-lg">TQ</span>
+        </div>
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold">TAITEQ — Care Manager Diary</h1>
+          <p class="text-sm md:text-base text-slate-300">Password • Voice notes • SOS • Offline-ready</p>
+        </div>
+      </div>
+      <div class="text-sm md:text-base text-slate-300" id="lockStatus">🔒 Locked</div>
+    </header>
+
+    <!-- Password Gate -->
+    <section id="gate" class="max-w-3xl rounded-2xl border border-slate-700 p-8 glass mx-auto">
+      <h2 class="text-2xl font-semibold">Enter password</h2>
+      <p class="mt-2 text-base text-slate-300">Your diary is protected on this device.</p>
+
+      <form id="gateForm" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] items-center" autocomplete="off">
+        <input type="password" placeholder="Password"
+               class="w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-6 py-4 text-lg text-slate-100 placeholder:text-slate-400" required />
+        <div class="flex items-center gap-5 md:justify-end">
+          <label class="flex items-center gap-2 text-base text-slate-300">
+            <input type="checkbox" id="rememberMe" class="h-5 w-5 rounded border-slate-500 bg-[var(--navy-2)]" />
+            Remember me
+          </label>
+          <button class="pill px-8 py-4 text-lg btn-gold" type="submit">Unlock</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Diary (shown after unlock) -->
+    <section id="diary" class="hidden mt-8 space-y-8">
+      <div class="max-w-3xl mx-auto hidden rounded-xl border border-amber-300/50 bg-amber-200/10 text-amber-200 p-3 text-sm" id="offlineBanner">
+        No endpoint configured — entries will be saved locally until you add one.
+      </div>
+
+      <!-- Controls row -->
+      <div class="max-w-3xl mx-auto flex flex-wrap items-center gap-4">
+        <span class="text-base text-slate-300">Mode:</span>
+        <button id="quickBtn" class="px-4 py-2 pill text-base bg-white text-[var(--navy)]">Quick</button>
+        <button id="fullBtn" class="px-4 py-2 pill text-base border border-slate-600">Full</button>
+        <span class="grow"></span>
+        <button id="sosBtn" class="px-4 py-2 pill text-base border border-slate-600" title="Flag as critical">SOS</button>
+      </div>
+
+      <!-- Voice note -->
+      <div class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-lg">Optional voice note</p>
+            <p class="text-sm opacity-70">Auto-stops at 2:00.</p>
+          </div>
+          <div class="text-sm" id="micStatus">🎙️ Ready</div>
+        </div>
+        <div class="mt-4 flex flex-wrap items-center gap-4">
+          <button id="recBtn" class="pill px-5 py-3 bg-white text-[var(--navy)] font-medium">Start recording</button>
+          <button id="stopBtn" class="pill px-5 py-3 border border-slate-600 hidden">Stop</button>
+          <span id="timer" class="text-sm opacity-70 hidden">00:00</span>
+        </div>
+        <div id="audioWrap" class="mt-3 hidden">
+          <audio id="audioPreview" controls class="w-full"></audio>
+          <button id="discardAudio" class="mt-2 text-sm underline">Discard</button>
+        </div>
+      </div>
+
+      <!-- Quick form -->
+      <form id="quickForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5">
+        <label class="text-base">What happened?
+          <textarea name="what_happened" rows="3"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"></textarea>
+        </label>
+
+        <div class="flex items-center justify-between">
+          <label class="text-base text-slate-300 flex items-center gap-2">
+            <input type="checkbox" name="anonymous" class="h-5 w-5 rounded border-slate-600 bg-[var(--navy-2)]">
+            Anonymous
+          </label>
+          <button class="pill px-7 py-3 text-lg btn-gold" type="submit">Log entry</button>
+        </div>
+      </form>
+
+      <!-- After-submit coach -->
+      <div id="coach" class="max-w-3xl mx-auto hidden rounded-2xl border border-emerald-400/40 p-6 glass text-emerald-100">
+        <p class="font-medium text-lg">Entry saved. Thank you.</p>
+        <div class="mt-3 h-16 w-16 rounded-full mx-auto border border-emerald-400/60" style="animation:breathe 4s ease-in-out infinite"></div>
+      </div>
+
+      <!-- Offline queue banner -->
+      <div class="max-w-3xl mx-auto rounded-xl border border-emerald-300/50 bg-emerald-200/10 text-emerald-100 p-3 text-sm hidden" id="queueBanner">
+        You have <span id="queueCount">0</span> unsent entry(ies). <button id="sendQueue" class="underline font-medium">Send now</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const PASSWORD = "Daddy";      // change if you like
+    const ENDPOINT = "";           // paste your Apps Script Web App URL
+    const MAX_SECONDS = 120;       // voice auto-stop at 2 minutes
+    // ==================
+
+    const gate = document.getElementById('gate');
+    const diary = document.getElementById('diary');
+    const gateForm = document.getElementById('gateForm');
+    const lockStatus = document.getElementById('lockStatus');
+    const rememberMe = document.getElementById('rememberMe');
+    const offlineBanner = document.getElementById('offlineBanner');
+    const queueBanner = document.getElementById('queueBanner');
+    const queueCount = document.getElementById('queueCount');
+    const sendQueue = document.getElementById('sendQueue');
+
+    const quickBtn = document.getElementById('quickBtn');
+    const fullBtn  = document.getElementById('fullBtn');
+    const quickForm= document.getElementById('quickForm');
+    const coach    = document.getElementById('coach');
+    const sosBtn   = document.getElementById('sosBtn');
+
+    // Voice elements
+    const recBtn=document.getElementById('recBtn'), stopBtn=document.getElementById('stopBtn'),
+          timer=document.getElementById('timer'), audioWrap=document.getElementById('audioWrap'),
+          audioPreview=document.getElementById('audioPreview'), discardAudio=document.getElementById('discardAudio');
+
+    let mediaRecorder=null, audioChunks=[], audioBlob=null, timerInterval=null, seconds=0, sos=false;
+
+    function isEndpointConfigured(){ return (ENDPOINT||"").trim().length>0; }
+    function updateQueueBanner(){
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
+      if (q.length > 0) { queueCount.textContent = String(q.length); queueBanner.classList.remove('hidden'); }
+      else { queueBanner.classList.add('hidden'); }
+    }
+    function showDiary(){
+      gate.classList.add('hidden');
+      diary.classList.remove('hidden');
+      lockStatus.textContent = '🔓 Unlocked';
+      if (!isEndpointConfigured()) offlineBanner.classList.remove('hidden');
+      updateQueueBanner();
+    }
+
+    // Auto-unlock if remembered
+    (function init(){ if (localStorage.getItem('diary_unlocked') === 'true') showDiary(); })();
+
+    // Unlock
+    gateForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const val = gateForm.querySelector('input[type="password"]').value;
+      if (val === PASSWORD) {
+        if (rememberMe.checked) localStorage.setItem('diary_unlocked','true');
+        showDiary();
+      } else alert('Incorrect password');
+    });
+
+    // Mode buttons (keep just quick visible in this version)
+    quickBtn.addEventListener('click', () => {
+      quickBtn.className='px-4 py-2 pill text-base bg-white text-[var(--navy)]';
+      fullBtn.className='px-4 py-2 pill text-base border border-slate-600';
+      quickForm.classList.remove('hidden');
+    });
+    fullBtn.addEventListener('click', () => {
+      fullBtn.className='px-4 py-2 pill text-base bg-white text-[var(--navy)]';
+      quickBtn.className='px-4 py-2 pill text-base border border-slate-600';
+      // (Full form omitted in this trimmed build)
+    });
+
+    // SOS toggle
+    sosBtn.addEventListener('click',()=>{ sos=!sos; sosBtn.classList.toggle('sos-on',sos); });
+
+    // Voice recorder
+    recBtn.addEventListener('click', async ()=>{
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+        audioChunks=[]; mediaRecorder=new MediaRecorder(stream);
+        mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+        mediaRecorder.onstop=()=>{
+          audioBlob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
+          audioPreview.src=URL.createObjectURL(audioBlob);
+          audioWrap.classList.remove('hidden'); recBtn.classList.remove('hidden');
+          stopBtn.classList.add('hidden'); timer.classList.add('hidden');
+          clearInterval(timerInterval); stream.getTracks().forEach(t=>t.stop());
+        };
+        mediaRecorder.start();
+        recBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); timer.classList.remove('hidden');
+        seconds=0; timer.textContent="00:00";
+        timerInterval=setInterval(()=>{ seconds++; const m=String(Math.floor(seconds/60)).padStart(2,'0'); const s=String(seconds%60).padStart(2,'0'); timer.textContent=`${m}:${s}`; if(seconds>=MAX_SECONDS) mediaRecorder.stop(); },1000);
+      }catch{ alert('Microphone access denied or unavailable.'); }
+    });
+    stopBtn.addEventListener('click',()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); });
+    discardAudio.addEventListener('click',()=>{ audioBlob=null; audioWrap.classList.add('hidden'); recBtn.classList.remove('hidden'); });
+
+    // Helpers
+    async function blobToDataURL(b){ if(!b) return null; return new Promise(r=>{ const fr=new FileReader(); fr.onloadend=()=>r(fr.result); fr.readAsDataURL(b); }); }
+    async function postJSON(payload){
+      if (!isEndpointConfigured()) throw new Error('No endpoint');
+      const res = await fetch(ENDPOINT,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if (!res.ok) throw new Error('Submit failed');
+      return await res.json().catch(()=>({}));
+    }
+    function queueLocally(payload){
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]'); q.push(payload);
+      localStorage.setItem('offline_queue_json', JSON.stringify(q)); updateQueueBanner();
+    }
+    function afterSubmit(){
+      coach.classList.remove('hidden'); setTimeout(()=>coach.classList.add('hidden'), 6000);
+      quickForm.reset(); if(audioBlob) discardAudio.click(); sos=false; sosBtn.classList.remove('sos-on'); updateQueueBanner();
+    }
+
+    // Submit quick
+    quickForm.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const fd=new FormData(quickForm);
+      const payload={
+        mode:'quick',
+        timestamp:new Date().toISOString(),
+        what_happened:fd.get('what_happened')||'',
+        anonymous:fd.get('anonymous')==='on',
+        device:navigator.userAgent||'',
+        sos:!!sos,
+        audioDataURL: await blobToDataURL(audioBlob)
+      };
+      try { await postJSON(payload); afterSubmit(); }
+      catch { queueLocally(payload); alert('Saved locally. Tap "Send now" later to upload.'); afterSubmit(); }
+    });
+
+    // Send queued
+    sendQueue.addEventListener('click', async ()=>{
+      if (!isEndpointConfigured()) return alert('Add an endpoint first.');
+      const q = JSON.parse(localStorage.getItem('offline_queue_json') || '[]');
+      let ok=0; for (const item of q){ try{ await postJSON(item); ok++; } catch(e){} }
+      if (ok>0){ localStorage.setItem('offline_queue_json','[]'); updateQueueBanner(); alert('Queued entries sent.'); }
+      else { alert('Could not send queued entries.'); }
+    });
+  </script>
+</body>
+</html>
