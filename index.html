@@ -8,22 +8,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { --navy:#0a1b2b; --navy-2:#0f2438; --gold:#FFD700; }
-    @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
     .glass { background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
     .btn { border-radius: 12px; }
     .btn-gold { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000); color: var(--navy); font-weight: 700; box-shadow: 0 0 12px rgba(255,215,0,.7); transition: all .2s; }
     .btn-gold:hover { filter: brightness(1.08); box-shadow: 0 0 24px rgba(255,215,0,1); }
-    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
     .chip { border-radius: 999px; border:1px solid rgb(71 85 105); padding:.35rem .75rem; }
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
+    .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
+    @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
 
-    /* Private badge styling */
+    /* Private badge: bold emerald */
     .badge {
       border-radius: 10px;
       padding: .25rem .65rem;
       font-weight: 700;
-      background: linear-gradient(45deg, #10B981, #059669); /* emerald shades */
-      color: #ECFDF5; /* mint text */
+      background: linear-gradient(45deg, #10B981, #059669);
+      color: #ECFDF5;
       border: none;
       box-shadow: 0 0 12px rgba(16,185,129,.6);
     }
@@ -76,6 +76,7 @@
     <section id="gate" class="max-w-3xl rounded-2xl border border-slate-700 p-8 glass mx-auto">
       <h2 class="text-2xl font-semibold">Enter password</h2>
       <p class="mt-2 text-base text-slate-300">Your diary is protected on this device.</p>
+
       <form id="gateForm" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] items-center" autocomplete="off">
         <input type="password" placeholder="Password"
                class="w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-6 py-4 text-lg text-slate-100 placeholder:text-slate-400" required />
@@ -106,28 +107,32 @@
             class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
             placeholder="What’s getting in the way right now?"></textarea>
         </label>
+
         <label class="text-base">Proposed solution / requirement
           <textarea name="proposed_solution" rows="2"
             class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
             placeholder="What would fix this or make it easier?"></textarea>
         </label>
+
         <fieldset class="text-base">
           <legend class="mb-2">Tag the area(s)</legend>
           <div class="grid grid-cols-2 gap-2">
-            <label><input type="checkbox" name="tags" value="Medication"> Medication</label>
-            <label><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
-            <label><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
-            <label><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
-            <label><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
-            <label><input type="checkbox" name="tags" value="Training"> Training</label>
-            <label><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
-            <label><input type="checkbox" id="qOther" value="__OTHER__"> Other</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Medication"> Medication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Training"> Training</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="qOther" value="__OTHER__"> Other</label>
           </div>
           <input id="qOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
+
+        <!-- Save + left toast -->
         <div class="flex items-center gap-3 relative justify-end">
-          <button id="quickSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
           <div id="quickEntryToast" class="entry-toast">Thank you for trusting me with this! 😉</div>
+          <button id="quickSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
       </form>
 
@@ -141,41 +146,52 @@
             <option value="4">😣 Stressed</option>
             <option value="5">😫 Overwhelmed</option>
           </select>
+          <p class="text-xs text-slate-300 mt-1">Choose how this specific pain point is making you feel right now.</p>
         </label>
+
         <label class="text-base">Pain point
           <textarea name="pain_point" rows="3"
             class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
             placeholder="What’s the issue? Facts only."></textarea>
         </label>
+
         <label class="text-base">What would “better” look like? (ideal)
           <textarea name="ideal" rows="2"
             class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
             placeholder="Describe the outcome or requirement."></textarea>
         </label>
+
         <fieldset class="text-base">
           <legend class="mb-2">Tag the area(s)</legend>
           <div class="grid grid-cols-2 gap-2">
-            <label><input type="checkbox" name="tags" value="Medication"> Medication</label>
-            <label><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
-            <label><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
-            <label><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
-            <label><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
-            <label><input type="checkbox" name="tags" value="Training"> Training</label>
-            <label><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
-            <label><input type="checkbox" id="fOther" value="__OTHER__"> Other</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Medication"> Medication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Rota & Staffing"> Rota & Staffing</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Care Notes/Logs"> Care Notes/Logs</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Audits/Compliance"> Audits/Compliance</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Handovers"> Handovers</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Training"> Training</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="tags" value="Family Communication"> Family Communication</label>
+            <label class="flex items-center gap-2"><input type="checkbox" id="fOther" value="__OTHER__"> Other</label>
           </div>
           <input id="fOtherText" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100 hidden" placeholder="Specify other…" />
         </fieldset>
+
+        <!-- Save + left toast -->
         <div class="flex items-center gap-3 relative justify-end">
-          <button id="fullSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
           <div id="fullEntryToast" class="entry-toast">Thank you for trusting me with this! 😉</div>
+          <button id="fullSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
+
+        <!-- Private Vent (never sent) -->
         <div class="rounded-xl border border-slate-700 p-4">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 mb-1">
             <span class="badge">Private</span>
             <p class="font-semibold">The Locker-Room Vent (your private bench)</p>
           </div>
-          <p class="text-sm text-slate-300 mt-1"><strong>Busy often means Overwhelmed.</strong> Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent.</p>
+          <p class="text-sm text-slate-300">
+            <strong>Busy often means Overwhelmed.</strong> Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent. Growl, vent, or type “I’m fine 💪” if you’d rather smirk at it.
+          </p>
+          <p class="text-xs text-slate-400 mt-2">Optional: let it out. We won't transmit or store this.</p>
           <textarea id="ventBox" rows="3" class="mt-3 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="Optional: let it out. We won’t transmit or store this."></textarea>
         </div>
       </form>
@@ -183,30 +199,117 @@
   </div>
 
   <script>
+    // ===== CONFIG =====
     const PASSWORD = "Daddy";
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwgdKeJ5LdG9AhieYqmzA8L2uYgSjXkpHsdsVF9tFSWSJgzEvLK4Vr-oJcz6erQTK4VJg/exec";
-    const MAX_SECONDS = 120;
+    // ==================
 
-    const gate=document.getElementById('gate'), diary=document.getElementById('diary'), gateForm=document.getElementById('gateForm');
-    const lockStatus=document.getElementById('lockStatus'), rememberMe=document.getElementById('rememberMe');
-    const quickBtn=document.getElementById('quickBtn'), fullBtn=document.getElementById('fullBtn');
-    const quickForm=document.getElementById('quickForm'), fullForm=document.getElementById('fullForm');
-    const qOther=document.getElementById('qOther'), qOtherText=document.getElementById('qOtherText');
-    const fOther=document.getElementById('fOther'), fOtherText=document.getElementById('fOtherText');
-    const ventBox=document.getElementById('ventBox');
-    const quickSaveBtn=document.getElementById('quickSaveBtn'), fullSaveBtn=document.getElementById('fullSaveBtn');
-    const quickEntryToast=document.getElementById('quickEntryToast'), fullEntryToast=document.getElementById('fullEntryToast');
-    let sos=false, audioBlob=null;
+    const gate = document.getElementById('gate');
+    const diary = document.getElementById('diary');
+    const gateForm = document.getElementById('gateForm');
+    const lockStatus = document.getElementById('lockStatus');
+    const rememberMe = document.getElementById('rememberMe');
 
-    gateForm.addEventListener('submit',e=>{e.preventDefault();if(gateForm.querySelector('input').value===PASSWORD){if(rememberMe.checked)localStorage.setItem('diary_unlocked','true');gate.classList.add('hidden');diary.classList.remove('hidden');lockStatus.textContent='🔓 Unlocked';}else alert('Incorrect password');});
-    quickBtn.addEventListener('click',()=>{quickBtn.classList.add('chip-active');fullBtn.classList.remove('chip-active');quickForm.classList.remove('hidden');fullForm.classList.add('hidden');});
-    fullBtn.addEventListener('click',()=>{fullBtn.classList.add('chip-active');quickBtn.classList.remove('chip-active');fullForm.classList.remove('hidden');quickForm.classList.add('hidden');});
-    qOther.addEventListener('change',()=>{qOtherText.classList.toggle('hidden',!qOther.checked);});
-    fOther.addEventListener('change',()=>{fOtherText.classList.toggle('hidden',!fOther.checked);});
+    const quickBtn = document.getElementById('quickBtn');
+    const fullBtn  = document.getElementById('fullBtn');
+    const quickForm= document.getElementById('quickForm');
+    const fullForm = document.getElementById('fullForm');
 
-    function bounce(el){el.classList.remove('btn-bounce');void el.offsetWidth;el.classList.add('btn-bounce');}
-    function showToast(el){el.classList.remove('show');void el.offsetWidth;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000);}
-    function collectTags(formEl,otherChecked,otherTextEl){const fd=new FormData(formEl);let tags=fd.getAll('tags');if(otherChecked&&otherTextEl.value.trim())tags.push("Other: "+otherTextEl.value.trim());return tags;}
+    const qOther   = document.getElementById('qOther');
+    const qOtherText = document.getElementById('qOtherText');
+    const fOther   = document.getElementById('fOther');
+    const fOtherText = document.getElementById('fOtherText');
 
-    quickForm.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(quickForm);const payload={mode:'quick',timestamp:new Date().toISOString(),what_happened:fd.get('pain_point')||'',ideal:fd.get('proposed_solution')||'',tags:collectTags(quickForm,qOther.checked,qOtherText),sos:!!sos,audioDataURL:null};try{await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});showToast(quickEntryToast);bounce(quickSaveBtn);}catch{alert('Saved locally');showToast(quickEntryToast);bounce(quickSaveBtn);}quickForm.reset();qOther.checked=false;qOtherText.classList.add('hidden');});
-    fullForm.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(fullForm);const payload={mode:'full',timestamp:new Date().toISOString(),mood:fd.get('mood')||'',what_happened:fd.get('pain_point')||'',ideal:fd.get('ideal')||'',tags:collectTags(fullForm,fOther.checked,fOtherText),sos:!!sos,audioDataURL:null};try{await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});showToast(fullEntryToast);bounce(fullSaveBtn);}catch{alert('Saved locally');showToast(fullEntryToast);bounce(fullSaveBtn);}fullForm.reset();fOther.checked=false;fOtherText.class
+    const ventBox  = document.getElementById('ventBox');
+
+    const quickSaveBtn = document.getElementById('quickSaveBtn');
+    const fullSaveBtn  = document.getElementById('fullSaveBtn');
+    const quickEntryToast = document.getElementById('quickEntryToast');
+    const fullEntryToast  = document.getElementById('fullEntryToast');
+
+    // Unlock
+    gateForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const pw = gateForm.querySelector('input[type="password"]').value;
+      if (pw === PASSWORD) {
+        if (rememberMe.checked) localStorage.setItem('diary_unlocked','true');
+        gate.classList.add('hidden');
+        diary.classList.remove('hidden');
+        lockStatus.textContent = '🔓 Unlocked';
+      } else {
+        alert('Incorrect password');
+      }
+    });
+
+    // Mode toggles
+    quickBtn.addEventListener('click', () => {
+      quickBtn.classList.add('chip-active'); fullBtn.classList.remove('chip-active');
+      quickForm.classList.remove('hidden'); fullForm.classList.add('hidden');
+    });
+    fullBtn.addEventListener('click', () => {
+      fullBtn.classList.add('chip-active'); quickBtn.classList.remove('chip-active');
+      fullForm.classList.remove('hidden'); quickForm.classList.add('hidden');
+    });
+
+    // Other reveal
+    qOther.addEventListener('change', () => qOtherText.classList.toggle('hidden', !qOther.checked));
+    fOther.addEventListener('change', () => fOtherText.classList.toggle('hidden', !fOther.checked));
+
+    // Helpers
+    function bounce(el){ el.classList.remove('btn-bounce'); void el.offsetWidth; el.classList.add('btn-bounce'); }
+    function showEntryToast(which){
+      const el = which === 'quick' ? quickEntryToast : fullEntryToast;
+      el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+      setTimeout(()=>el.classList.remove('show'), 3000);
+    }
+    function collectTags(formEl, otherChecked, otherTextEl){
+      const fd = new FormData(formEl);
+      let tags = fd.getAll('tags');
+      if (otherChecked && otherTextEl.value.trim()) tags.push("Other: " + otherTextEl.value.trim());
+      return tags;
+    }
+
+    // Submit: Quick
+    quickForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(quickForm);
+      const payload = {
+        mode:'quick',
+        timestamp:new Date().toISOString(),
+        what_happened: fd.get('pain_point') || '',
+        ideal: fd.get('proposed_solution') || '',
+        tags: collectTags(quickForm, qOther.checked, qOtherText)
+      };
+      try {
+        await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      } catch (err) {
+        // offline fallback could be added here if you want
+      }
+      showEntryToast('quick'); bounce(quickSaveBtn);
+      quickForm.reset(); qOther.checked=false; qOtherText.classList.add('hidden');
+    });
+
+    // Submit: Full
+    fullForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(fullForm);
+      const payload = {
+        mode:'full',
+        timestamp:new Date().toISOString(),
+        mood: fd.get('mood') || '',
+        what_happened: fd.get('pain_point') || '',
+        ideal: fd.get('ideal') || '',
+        tags: collectTags(fullForm, fOther.checked, fOtherText)
+        // NOTE: ventBox intentionally excluded (never sent/stored)
+      };
+      try {
+        await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      } catch (err) {
+        // offline fallback could be added here if you want
+      }
+      showEntryToast('full'); bounce(fullSaveBtn);
+      fullForm.reset(); fOther.checked=false; fOtherText.classList.add('hidden'); if (ventBox) ventBox.value='';
+    });
+  </script>
+</body>
+</html>
