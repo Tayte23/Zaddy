@@ -16,22 +16,22 @@
     .chip-active { background:#fff; color: var(--navy); border-color: transparent; }
     @keyframes pulseGold { 0% { box-shadow:0 0 6px rgba(255,215,0,.6);} 50%{box-shadow:0 0 20px rgba(255,215,0,1);} 100%{box-shadow:0 0 6px rgba(255,215,0,.6);} }
     .sos-on { background: linear-gradient(45deg,#FFD700,#FFC300,#FFB000)!important; color:var(--navy)!important; border-color:transparent!important; animation:pulseGold 1.6s ease-in-out infinite; font-weight:700; }
-
     .badge { border-radius: 10px; padding: .25rem .65rem; font-weight: 700; background: linear-gradient(45deg, #10B981, #059669); color: #ECFDF5; border: none; box-shadow: 0 0 12px rgba(16,185,129,.6); }
-
     @keyframes btnBounce { 0%{transform:scale(1)} 45%{transform:scale(.98)} 100%{transform:scale(1)} }
     .btn-bounce { animation: btnBounce .18s ease-out; }
-
     @keyframes popSlide { 0%{opacity:0; transform:translateY(6px) scale(.98);} 60%{opacity:1; transform:translateY(-2px) scale(1.01);} 100%{opacity:1; transform:translateY(0) scale(1);} }
-    .entry-toast { position:absolute; right:0; top:100%; margin-top:.6rem; z-index: 30; background: rgba(253, 230, 138, .18); border: 1px solid rgba(253, 230, 138, .55); color: #FFF7CC; font-weight: 600; padding: .55rem .75rem; border-radius: .75rem; backdrop-filter: blur(8px); box-shadow: 0 6px 16px rgba(0,0,0,.20); opacity: 0; pointer-events: none; white-space: nowrap; }
+    .entry-toast { position:absolute; right:0; top:100%; margin-top:.6rem; z-index: 30; background: rgba(253, 230, 138, .18); border: 1px solid rgba(253, 230, 138, .55); color: #FFF7CC; font-weight: 600; padding: .55rem .75rem; border-radius: .75rem; backdrop-filter: blur(8px); box-shadow: 0 6px 16px rgba(0,0,0,.20); opacity:0; pointer-events:none; white-space:nowrap; }
     .entry-toast.show { animation:popSlide .42s cubic-bezier(.22,.8,.3,1) forwards; }
   </style>
 </head>
 <body class="min-h-screen bg-[var(--navy)] text-slate-100 selection:bg-yellow-200/30">
   <div class="max-w-5xl mx-auto px-6 py-10">
+    <!-- Header -->
     <header class="mb-8 flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <div class="h-12 w-12 rounded-xl grid place-items-center bg-white"><span class="text-[var(--navy)] font-bold text-lg">TQ</span></div>
+        <div class="h-12 w-12 rounded-xl grid place-items-center bg-white">
+          <span class="text-[var(--navy)] font-bold text-lg">TQ</span>
+        </div>
         <div>
           <h1 class="text-3xl md:text-4xl font-bold">TAITEQ — Care Manager Diary</h1>
           <p class="text-sm md:text-base text-slate-300">Password • Voice notes • SOS • Offline-ready</p>
@@ -46,7 +46,7 @@
       <p class="mt-2 text-base text-slate-300">Your diary is protected on this device.</p>
 
       <form id="gateForm" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] items-center" autocomplete="off">
-        <input type="password" id="pw" placeholder="Password"
+        <input id="pwInput" type="password" placeholder="Password"
                class="w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-6 py-4 text-lg text-slate-100 placeholder:text-slate-400" required />
         <div class="flex items-center gap-5 md:justify-end">
           <label class="flex items-center gap-2 text-base text-slate-300">
@@ -68,7 +68,7 @@
         <button id="sosBtn" class="chip text-sm" title="Flag as critical" aria-pressed="false">SOS</button>
       </div>
 
-      <!-- Voice note -->
+      <!-- Voice note (shared) -->
       <div class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass">
         <div class="flex items-center justify-between">
           <div>
@@ -93,10 +93,15 @@
       <!-- QUICK MODE -->
       <form id="quickForm" class="max-w-3xl mx-auto rounded-2xl border border-slate-700 p-6 glass space-y-5">
         <label class="text-base">Pain point
-          <textarea name="pain_point" rows="3" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="What’s getting in the way right now?"></textarea>
+          <textarea name="pain_point" rows="3"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="What’s getting in the way right now?"></textarea>
         </label>
+
         <label class="text-base">Proposed solution / requirement
-          <textarea name="proposed_solution" rows="2" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="What would fix this or make it easier?"></textarea>
+          <textarea name="proposed_solution" rows="2"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="What would fix this or make it easier?"></textarea>
         </label>
 
         <fieldset class="text-base">
@@ -134,11 +139,15 @@
         </label>
 
         <label class="text-base">Pain point
-          <textarea name="pain_point" rows="3" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="What’s the issue? Facts only."></textarea>
+          <textarea name="pain_point" rows="3"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="What’s the issue? Facts only."></textarea>
         </label>
 
         <label class="text-base">What would “better” look like? (ideal)
-          <textarea name="ideal" rows="2" class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="Describe the outcome or requirement."></textarea>
+          <textarea name="ideal" rows="2"
+            class="mt-2 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100"
+            placeholder="Describe the outcome or requirement."></textarea>
         </label>
 
         <fieldset class="text-base">
@@ -161,13 +170,14 @@
           <button id="fullSaveBtn" class="btn btn-gold px-7 py-3 text-lg" type="submit">Save entry</button>
         </div>
 
+        <!-- Private vent (never sent) -->
         <div class="rounded-xl border border-slate-700 p-4">
           <div class="flex items-center gap-2 mb-1">
             <span class="badge">Private</span>
             <p class="font-semibold">The Locker-Room Vent (your private bench)</p>
           </div>
           <p class="text-sm text-slate-300">
-            <strong>Busy often means Overwhelmed.</strong> Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent. Growl, vent, or type “I’m fine 💪” if you’d rather smirk at it.
+            <strong>Busy often means Overwhelmed.</strong> Offload the mental barbell here. Nothing in this box ever leaves this page — not saved, not sent.
           </p>
           <p class="text-xs text-slate-400 mt-2">Optional: let it out. We won't transmit or store this.</p>
           <textarea id="ventBox" rows="3" class="mt-3 w-full rounded-xl border border-slate-600 bg-[var(--navy-2)] px-4 py-3 text-slate-100" placeholder="Optional: let it out. We won’t transmit or store this."></textarea>
@@ -227,7 +237,7 @@
     // Unlock
     gateForm.addEventListener('submit', e => {
       e.preventDefault();
-      const pw = document.getElementById('pw').value;
+      const pw = document.getElementById('pwInput').value;
       if (pw === PASSWORD) {
         if (rememberMe.checked) localStorage.setItem('diary_unlocked','true');
         gate.classList.add('hidden');
@@ -271,11 +281,15 @@
           audioPreview.src = URL.createObjectURL(audioBlob);
           audioWrap.classList.remove('hidden');
           micStatus.textContent = '🎙️ Ready';
+
+          // Cleanup UI
           clearInterval(tInt);
           seconds = 0;
           timer.classList.add('hidden');
           stopBtn.classList.add('hidden');
           recBtn.classList.remove('hidden');
+
+          // Stop mic tracks
           stream.getTracks().forEach(t => t.stop());
         };
         mediaRecorder.start();
@@ -326,24 +340,20 @@
     }
     function blobToDataURL(b){
       return new Promise(res => {
-        if (!b) return res("");                       // always return a string
+        if (!b) return res(null);
         const fr = new FileReader();
-        fr.onloadend = () => res(fr.result || "");
+        fr.onloadend = () => res(fr.result);
         fr.readAsDataURL(b);
       });
     }
 
-    async function postPayload(payload){
-      return fetch(ENDPOINT, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },  // JSON (Apps Script handles OPTIONS with CORS)
-        body: JSON.stringify(payload)
-      });
-    }
-
-    // Submit: Quick
+    // ===== SUBMIT: QUICK =====
     quickForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // DEBUG: size of recorded audio (bytes)
+      console.log('[QUICK] audioBlob size', audioBlob ? audioBlob.size : 0);
+
       const fd = new FormData(quickForm);
       const payload = {
         mode:'quick',
@@ -352,18 +362,43 @@
         ideal: fd.get('proposed_solution') || '',
         tags: collectTags(quickForm, qOther.checked, qOtherText),
         sos,
-        audioDataURL: await blobToDataURL(audioBlob)      // data URL or ""
+        audioDataURL: await blobToDataURL(audioBlob)
       };
-      try { await postPayload(payload); } catch (_) {}
+
+      // DEBUG: payload size in bytes
+      const body = JSON.stringify(payload);
+      console.log('[QUICK] payload bytes', body.length);
+
+      try {
+        const resp = await fetch(ENDPOINT, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain' }, // avoids preflight
+          body
+        });
+        // DEBUG: server response
+        console.log('[QUICK] server status', resp.status);
+        const json = await resp.json().catch(() => ({}));
+        console.log('[QUICK] server json', json);
+
+      } catch (err) {
+        console.error('[QUICK] fetch error', err);
+      }
+
       showEntryToast('quick'); bounce(quickSaveBtn);
+
+      // reset form + audio + sos
       quickForm.reset(); qOther.checked=false; qOtherText.classList.add('hidden');
       if (audioBlob) { audioBlob=null; audioWrap.classList.add('hidden'); audioPreview.removeAttribute('src'); }
       sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
     });
 
-    // Submit: Full
+    // ===== SUBMIT: FULL =====
     fullForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // DEBUG: size of recorded audio (bytes)
+      console.log('[FULL] audioBlob size', audioBlob ? audioBlob.size : 0);
+
       const fd = new FormData(fullForm);
       const payload = {
         mode:'full',
@@ -373,10 +408,32 @@
         ideal: fd.get('ideal') || '',
         tags: collectTags(fullForm, fOther.checked, fOtherText),
         sos,
-        audioDataURL: await blobToDataURL(audioBlob)      // data URL or ""
+        audioDataURL: await blobToDataURL(audioBlob)
+        // NOTE: ventBox intentionally excluded (never sent/stored)
       };
-      try { await postPayload(payload); } catch (_) {}
+
+      // DEBUG: payload size in bytes
+      const body = JSON.stringify(payload);
+      console.log('[FULL] payload bytes', body.length);
+
+      try {
+        const resp = await fetch(ENDPOINT, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain' }, // avoids preflight
+          body
+        });
+        // DEBUG: server response
+        console.log('[FULL] server status', resp.status);
+        const json = await resp.json().catch(() => ({}));
+        console.log('[FULL] server json', json);
+
+      } catch (err) {
+        console.error('[FULL] fetch error', err);
+      }
+
       showEntryToast('full'); bounce(fullSaveBtn);
+
+      // reset form + audio + sos
       fullForm.reset(); fOther.checked=false; fOtherText.classList.add('hidden'); if (ventBox) ventBox.value='';
       if (audioBlob) { audioBlob=null; audioWrap.classList.add('hidden'); audioPreview.removeAttribute('src'); }
       sos=false; sosBtn.classList.remove('sos-on'); sosBtn.setAttribute('aria-pressed','false');
