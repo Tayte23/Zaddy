@@ -396,7 +396,11 @@
         audioDataURL: await blobToDataURL(audioBlob)
       };
       try {
-        await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        await fetch(ENDPOINT, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain' },   // <= prevents preflight/CORS issues
+          body: JSON.stringify(payload)
+        });
       } catch (err) { /* optional offline queue here */ }
       showEntryToast('quick'); bounce(quickSaveBtn);
       // reset form + audio + sos
@@ -421,7 +425,11 @@
         // NOTE: ventBox intentionally excluded (never sent/stored)
       };
       try {
-        await fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        await fetch(ENDPOINT, {
+          method:'POST',
+          headers:{ 'Content-Type':'text/plain' },   // <= prevents preflight/CORS issues
+          body: JSON.stringify(payload)
+        });
       } catch (err) { /* optional offline queue here */ }
       showEntryToast('full'); bounce(fullSaveBtn);
       // reset form + audio + sos
